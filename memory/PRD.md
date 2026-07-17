@@ -22,6 +22,14 @@ Application web de gestion pour entreprise avec deux modules : **Boutique** et *
 - **Gestionnaire/Responsable de boutique, Technicien, Vendeur** : accès selon permissions et boutique d'affectation.
 - **Chef de dépôt / Magasinier** : module Dépôt (picking), Intervention/Devis (pas Reprise Boutique).
 
+## Itération 2 (17 juillet 2026) — Dépôt : picking réel + outil Étiquette
+- Reparsing des bons de livraison PDF calibré sur le format réel fourni par l'utilisateur : extraction description produit + UGS/Étagère/Colonne/Tiroir/Bac, N° de commande auto-extrait ("N° de commande :" + ligne suivante), fallback CMD-{timestamp} si non trouvé. Testé et validé sur un vrai bon de livraison 180 lignes / 285 unités / commande 56747 — extraction 100% exacte.
+- Commande dépôt : suppression du champ numéro manuel (auto-extrait), affichage "CMD {numero}" + "{picked}/{total} · {percent}%" avec barre de progression, correspondant exactement au rendu de référence fourni par l'utilisateur.
+- Pastille "tap-to-pick" : bouton rond "{picked}/{quantité}" cliqué autant de fois que la quantité (nouvel endpoint POST /depot/orders/{id}/lines/{line_id}/tap qui incrémente de 1, ou repasse à 0 si déjà au maximum). Statut auto (en_attente/en_cours/terminé).
+- Page détail commande : en-tête avec retour, titre, progression, menu "ACTIONS" (bon de livraison, étiquette, suppression).
+- Nouvel outil **Étiquette** (`/depot/etiquette`) répliquant fidèlement l'outil HTML fourni par l'utilisateur : upload PDF/JPG/PNG, rendu page 1 via pdf.js (CDN, cadrage fixe calibré x0=0.6067,y0=0.1525,x1=0.9812,y1=0.8439, échelle 2.2), aperçu découpé, boutons Imprimer / Télécharger PNG / Télécharger PDF (jsPDF CDN). 100% côté client, aucune dépendance backend.
+- Tests : 35/35 backend (28 précédents + 7 nouveaux dépôt), frontend Dépôt + Étiquette validés bout en bout, aucun bug résiduel.
+
 ## Ce qui est implémenté (17 juillet 2026)
 - Auth PIN + JWT cookie, seed admin (PIN 123456), seed boutique + dépôt par défaut.
 - Gestion utilisateurs : CRUD, grades multiples, permissions granulaires par module (reprise/devis/caisse/intervention/stock/communication), templates de permissions par grade avec surcharge admin.
@@ -44,9 +52,7 @@ Application web de gestion pour entreprise avec deux modules : **Boutique** et *
 ## Backlog priorisé (P0/P1/P2)
 - **P0** : Aucun bloquant restant après correctifs.
 - **P1** :
-  - Recadrage automatique des étiquettes Chronopost (actuellement affichage brut du PDF, pas de crop image comme le repo de référence).
-  - Amélioration du parsing PDF de bons de livraison (actuellement heuristique regex simple ligne "nom + quantité"; le repo de référence utilise une détection de bbox plus robuste).
-  - Rafraîchissement JWT (actuellement token unique 12h sans refresh token).
+  - Refresh token JWT (actuellement token unique 12h sans refresh token).
 - **P2** :
   - Export PDF multi-pages avec pagination visuelle plus fine pour devis/factures longues.
   - Recherche/filtre sur les listes (interventions, devis, reprises, stock).
