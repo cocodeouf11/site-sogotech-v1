@@ -441,10 +441,10 @@ class TestDepot:
     def test_create_order_with_pdf(self, admin_session):
         pdf = _make_pdf_bytes(["Coque iPhone 12  5", "Chargeur USB-C  10", "Verre trempe  3"])
         files = {"delivery": ("bl.pdf", pdf, "application/pdf")}
-        # numero passed as query param (endpoint accepts str)
+        # numero is now a Form field (not query param) after iteration 2 refactor
         s = requests.Session()
         s.cookies.update(admin_session.cookies)
-        r = s.post(f"{API}/depot/orders", params={"numero": "TEST_BL-001"}, files=files)
+        r = s.post(f"{API}/depot/orders", data={"numero": "TEST_BL-001"}, files=files)
         assert r.status_code == 200, r.text
         order = r.json()
         assert order["numero"] == "TEST_BL-001"
@@ -457,7 +457,7 @@ class TestDepot:
         files = {"delivery": ("bl.pdf", pdf, "application/pdf")}
         s = requests.Session()
         s.cookies.update(admin_session.cookies)
-        r = s.post(f"{API}/depot/orders", params={"numero": "TEST_BL-002"}, files=files)
+        r = s.post(f"{API}/depot/orders", data={"numero": "TEST_BL-002"}, files=files)
         assert r.status_code == 200
         order = r.json()
         oid = order["id"]

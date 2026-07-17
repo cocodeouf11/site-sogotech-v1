@@ -1,0 +1,43 @@
+{
+  "summary": "Iteration 2 testing focused on the modified Dépôt module (new PDF-based order parsing with UGS/Étagère/Colonne/Tiroir/Bac metadata, auto-extracted order number, tap-to-increment pill, ACTIONS dropdown) and the new Étiquette client-side crop tool (pdf.js + jsPDF via CDN). Backend: 35/35 pytest passed (28 legacy + 7 new depot tests covering auto-extract numero, metadata parsing, tap increment/cycle-at-max, single-qty done, status transitions en_attente→en_cours→termine, manual numero form override, no-extract fallback CMD-<ts>). Frontend: full end-to-end Depot flow verified — dialog has no numero field, PDF upload auto-extracts numero, toast 'Commande {numero} créée ({N} lignes)', order card shows 'CMD {numero}' + '{picked}/{total} · {percent}%' + progress bar, detail page header (back arrow, title, progress, ACTIONS dropdown), dashed-border line cards with UGS/Étagère/Colonne/Tiroir/Bac metadata, pill button tap increments (0/3→1/3), qty=1 pill turns green (emerald) when picked, tap at max cycles back to 0, ACTIONS menu items work, delete order works. Étiquette page: dropzone visible with correct FR text, pdf.js+jsPDF loaded from CDN, PDF upload triggers auto-crop preview (490×1280 px), all 3 buttons enabled (Imprimer/PNG/PDF), PNG download triggered ('test_bl-etiquette.png'), reset returns to dropzone.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/depot/orders", "issue": "Previous iteration_1 minor comment about 'numero' inconsistency is now RESOLVED — 'numero' is now a proper Optional[Form] field. The old backend_test.py::TestDepot test was passing it as a query param; updated to use data={} instead."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_depot_new.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/pytest/pytest_depot_new.xml"
+  ],
+  "action_items": [
+    "None — Dépôt iteration 2 features are fully working end-to-end (backend + frontend). Main agent can proceed with delivery."
+  ],
+  "critical_code_review_comments": [
+    "parse_delivery_lines() correctly extracts ugs/etagere/colonne/tiroir/bac via META_PATTERN + UGS_PATTERN regex; the description accumulation via name_buffer handles multi-line product names between meta lines correctly. Confirmed with 3-product test PDF.",
+    "tap endpoint correctly cycles: increment by 1, and resets to 0 if already at max (line.quantite_picked >= line.quantite_attendue). Status recalculated on every tap — termine if all done, en_cours if any picked, en_attente if none. All verified in tests.",
+    "extract_order_number() reads line following 'N° de commande' — robust to case and colon; falls back to CMD-<timestamp> if not found. Verified.",
+    "DepotLabelPage.jsx: pdf.js + jsPDF CDN scripts load once via loadScript() with existing-script guard; sets ready=true afterward and file input is disabled={!ready} until loaded — correct UX.",
+    "DepotLabelPage.jsx cropWithFraction() runs in a useEffect on active→true after canvas is populated; uses React state (previewSrc) for the img src instead of DOM manipulation, avoiding reconciliation conflicts — good pattern.",
+    "DepotOrderDetailPage.jsx: LinePill turns emerald when done; dashed-border container turns emerald border when line is done — solid UX.",
+    "Nit (non-blocking): DialogContent lacks aria-describedby (warning in console); consider adding a DialogDescription for a11y (pre-existing issue, not from this iteration)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_depot_new.py (new — 7 tests)",
+    "/app/backend/tests/backend_test.py (updated TestDepot to use data={} form instead of params={} for numero — needed after backend refactored numero to Form field)"
+  ],
+  "success_rate": {"backend": "100% (35/35)", "frontend": "100% (Dépôt orders + Étiquette flows both fully working)"},
+  "test_credentials": "Admin PIN: 123456 (from /app/memory/test_credentials.md).",
+  "seed_data_creation": "Backend tests create TEST_-prefixed depot orders — cleaned up in tests via DELETE after each test. UI test created 'CMD TEST-UI-42' via UI and then deleted via ACTIONS→Supprimer. Two old 'CMD TEST_BL-001' from a prior iteration_1 run remain in DB (empty lines, harmless).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 2 = Dépôt refactor + new Étiquette tool. Both are green end-to-end. If future iterations touch depot parser or tap logic, re-run /app/backend/tests/test_depot_new.py. The Étiquette tool depends on the browser being able to reach cdnjs.cloudflare.com — current preview environment can, but note this dependency in case of infra changes. All other modules (Auth, Stock, Caisse, Intervention, Devis, Reprise, Communication, Users, Shops) are still green — regression covered by /app/backend/tests/backend_test.py 28 legacy tests, all passing.",
+  "rca of the issue": "No new bugs found. One test-code fix (backend_test.py switching from params={numero} to data={numero}) was applied since the backend endpoint moved 'numero' from query to Form — production code is correct, only the legacy test needed updating."
+}
