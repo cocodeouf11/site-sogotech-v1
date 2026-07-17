@@ -1,0 +1,137 @@
+{
+  "typography": {
+    "font_families": {
+      "headings": "Outfit, sans-serif",
+      "body": "'IBM Plex Sans', sans-serif",
+      "mono": "'JetBrains Mono', monospace"
+    },
+    "rules": {
+      "h1": "text-4xl sm:text-5xl font-bold tracking-tight text-foreground",
+      "h2": "text-2xl sm:text-3xl font-semibold tracking-tight text-foreground",
+      "h3": "text-xl sm:text-2xl font-medium tracking-tight text-foreground",
+      "body": "text-base leading-relaxed text-foreground/90",
+      "small_labels": "text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground",
+      "headings_anti_pattern": "Do not use Inter or generic sans for headings. Apply fluid scaling with limits."
+    }
+  },
+  "colors": {
+    "archetype": "The Performance Pro / Technical Minimalist",
+    "light_mode": {
+      "background": "hsl(210 40% 98%)",
+      "foreground": "hsl(222.2 84% 4.9%)",
+      "card": "hsl(0 0% 100%)",
+      "primary": "hsl(221.2 83.2% 53.3%)",
+      "primary_foreground": "hsl(210 40% 98%)",
+      "destructive": "hsl(0 84.2% 60.2%)",
+      "border": "hsl(214.3 31.8% 91.4%)",
+      "muted": "hsl(210 40% 96.1%)"
+    },
+    "dark_mode": {
+      "background": "hsl(240 10% 3.9%)",
+      "foreground": "hsl(210 40% 98%)",
+      "card": "hsl(240 10% 3.9%)",
+      "primary": "hsl(217.2 91.2% 59.8%)",
+      "primary_foreground": "hsl(222.2 47.4% 11.2%)",
+      "destructive": "hsl(0 62.8% 30.6%)",
+      "border": "hsl(240 3.7% 15.9%)",
+      "muted": "hsl(240 3.7% 15.9%)"
+    },
+    "rules": {
+      "no_transparent_overlays": "Never use completely transparent backgrounds for headers or overlays. Always use solid or heavily blurred glassmorphism.",
+      "tactical_contrast": "Use sharp contrasts. Actionable items should pop against structural grays.",
+      "hover_states": "Hover states must explicitly change text color and background color to ensure contrast (e.g., hover:bg-blue-700 hover:text-white)."
+    }
+  },
+  "visual_enhancers": {
+    "surfaces": {
+      "glassmorphism": "For sticky headers or floating navs: backdrop-blur-xl bg-background/80 border-b border-border shadow-sm.",
+      "forms_paper": "For Intervention and Devis: Style the container like a physical A4 sheet. bg-white text-black shadow-lg mx-auto max-w-4xl p-8 sm:p-12 border border-slate-200 dark:bg-zinc-900 dark:text-zinc-100 dark:border-zinc-800.",
+      "tactile_buttons": "For Depot/Warehouse module: Use chunky buttons with solid borders and inset shadows to feel physical, ensuring easy taps with gloves."
+    },
+    "icons": {
+      "library": "lucide-react",
+      "style": "Clean, technical, consistent stroke width (1.5px to 2px)."
+    }
+  },
+  "components": {
+    "login_pin_pad": {
+      "structure": "3x4 grid of circular or large rounded-square buttons, similar to a physical POS terminal or ATM.",
+      "touch_targets": "min-h-[80px] min-w-[80px] text-3xl font-bold"
+    },
+    "pos_caisse": {
+      "layout": "Split pane layout. Left: Grid of square product cards (image, name, quantity). Right: Cart/Ticket builder (Invoice style).",
+      "cards": "Square aspect ratio, image filling top 60%, content below. border border-border rounded-xl."
+    },
+    "warehouse_depot": {
+      "mobile_first": "Must be designed for small tablets/phones. ALL actionable items must be massive (min-h-[64px]).",
+      "validation": "Line-by-line touch validation with a numpad increment modal. High contrast green for confirmed, yellow for pending."
+    },
+    "forms_interventions_devis": {
+      "layout": "A4 document layout. Use large HTML textareas for issue descriptions.",
+      "signature_pad": "A distinctly styled rectangular canvas area with a 'Clear' button inside it. bg-slate-50 dark:bg-zinc-800 border-2 border-dashed border-border rounded-lg h-32 flex items-center justify-center."
+    },
+    "fiche_reprise": {
+      "phone_diagram": "Use a generic smartphone SVG outline (front and back) where users can click to add markers (red dots/crosses) indicating defects."
+    },
+    "internal_messaging": {
+      "chat_interface": "Standard message bubbles, left/right aligned. File attachment area. Ticket system with color-coded urgency tags (Low: Green, Medium: Yellow, High: Orange, Critical: Red)."
+    }
+  },
+  "grids_and_layouts": {
+    "spacing_scale": "Use generous spacing. p-6, p-8, p-12. Containers with borders must have internal padding.",
+    "dashboard_grid": "High Density Grid (grid-cols-1 md:grid-cols-3 lg:grid-cols-4). Tight gaps (gap-4 or gap-6). Cards must use h-full.",
+    "alignment": "Mobile-first responsive. Left-align dense content. Optical alignment over geometrical."
+  },
+  "motion": {
+    "rules": {
+      "interactions": "Hover states (slight lift -translate-y-[1px]), focus rings (ring-2 ring-primary ring-offset-background).",
+      "transitions": "Use specific transition properties, NEVER 'transition: all'. e.g., transition-colors duration-200, transition-transform.",
+      "reduced_motion": "Respect prefers-reduced-motion media query for all animations."
+    }
+  },
+  "accessibility": {
+    "contrast": "Ensure all text meets minimum 4.5:1 ratio.",
+    "testing": "All interactive elements MUST include a data-testid attribute in kebab-case based on role (e.g., data-testid='pin-pad-button-1').",
+    "focus": "Visible focus states for keyboard navigation."
+  },
+  "media": {
+    "rules": {
+      "images": "Images must have max-h-[80vh] md:max-h-none.",
+      "overlays": "Hero/Header background images must have an overlay (e.g., bg-black/60) if text is placed on them."
+    }
+  },
+  "image_urls": {
+    "warehouse_worker": {
+      "url": "https://images.pexels.com/photos/4483941/pexels-photo-4483941.jpeg",
+      "category": "Login Background / Depot Hero",
+      "description": "Man using a scanner in a warehouse, representing the Depot module."
+    },
+    "repair_parts": {
+      "url": "https://images.pexels.com/photos/31862953/pexels-photo-31862953.jpeg",
+      "category": "Stock Module Placeholder",
+      "description": "Disassembled smartphone with tools."
+    },
+    "avatar_professional": {
+      "url": "https://images.pexels.com/photos/6146051/pexels-photo-6146051.jpeg",
+      "category": "Messaging Avatar",
+      "description": "Professional bald man in suit, used for admin/manager avatar in messaging."
+    }
+  },
+  "instructions_to_main_agent": {
+    "language": "French language must be used for all UI copy (Tableau de bord, Stock, Caisse, Interventions, Devis, Dépôt, Messagerie, Paramètres).",
+    "theme": "Implement a Dark/Light theme toggle globally accessible.",
+    "libraries": "Use Tailwind CSS for styling. Use Lucide-React for icons. Create a custom phone diagram component using basic SVG shapes for the trade-in form.",
+    "ui_components": "Use custom raw HTML/Tailwind for complex bespoke layouts like the A4 Intervention/Devis forms and PIN Pad. Use Shadcn for standard form inputs, dialogs, dropdowns.",
+    "data_testid": "Apply data-testid to every button, input, and link."
+  },
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": {
+    "aesthetic": "Avoid 'AI slop'. Do not use simplistic gradients or generic centered layouts. Use crisp, high-utility borders and solid colors.",
+    "depth": "Create depth through layered design elements with z-index hierarchy and subtle ambient shadows.",
+    "interactions": "Every interaction needs micro-animations (hover, active, focus).",
+    "spacing": "Use 2-3x more spacing than typical templates.",
+    "no_universal_transition": "You MUST NOT apply universal transition (transition: all).",
+    "no_centered_app": "You MUST NOT center align the app container (.App { text-align: center; }).",
+    "modern_buttons": "Use sharp or slightly rounded (rounded-md) button styles with interaction animations. Never use AI emojis (🤖🧠) for icons.",
+    "toast": "Use 'sonner' for toasts if notifications are needed."
+  }
+}
