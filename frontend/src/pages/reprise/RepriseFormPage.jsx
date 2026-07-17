@@ -51,7 +51,11 @@ export default function RepriseFormPage() {
   useEffect(() => {
     (async () => {
       const shopsRes = await api.get("/shops");
-      setShop(shopsRes.data.find((s) => s.id === user.shop_id) || shopsRes.data[0]);
+      const myShop = shopsRes.data.find((s) => s.id === user.shop_id);
+      if (!myShop && isNew) {
+        toast.error("Aucune boutique n'est assignée à votre compte. Contactez un administrateur.");
+      }
+      setShop(myShop || shopsRes.data[0]);
       if (!isNew) {
         const { data: item } = await api.get(`/reprises/${id}`);
         setData(item);
@@ -68,6 +72,10 @@ export default function RepriseFormPage() {
 
   const save = async () => {
     const signature_data = sigRef.current?.toDataURL() || data.signature_data || "";
+    if (isNew && !shop) {
+      toast.error("Impossible de créer : aucune boutique assignée à votre compte.");
+      return;
+    }
     const payload = {
       ...data,
       signature_data,

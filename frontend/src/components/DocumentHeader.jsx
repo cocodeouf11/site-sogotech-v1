@@ -18,6 +18,7 @@ export function DocumentHeader({ shop, numero }) {
           <p className="font-heading font-semibold text-lg" data-testid="doc-header-shop-name">{shop?.nom || "Boutique"}</p>
           <p className="text-sm text-slate-600">{shop?.adresse}</p>
           <p className="text-sm text-slate-600">Tél: {shop?.telephone}</p>
+          {shop?.siret && <p className="text-sm text-slate-600">SIRET: {shop.siret}</p>}
         </div>
       </div>
       {numero && (

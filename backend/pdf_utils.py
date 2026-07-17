@@ -41,7 +41,10 @@ def draw_header(c: canvas.Canvas, shop: dict, page_width, y_top):
     c.drawString(text_x, y_top - 6 * mm, shop.get("nom", "Boutique"))
     c.setFont("Helvetica", 9)
     c.drawString(text_x, y_top - 11 * mm, shop.get("adresse", ""))
-    c.drawString(text_x, y_top - 16 * mm, f"Tél: {shop.get('telephone', '')}")
+    line3 = f"Tél: {shop.get('telephone', '')}"
+    if shop.get("siret"):
+        line3 += f"   SIRET: {shop.get('siret')}"
+    c.drawString(text_x, y_top - 16 * mm, line3)
     c.setLineWidth(0.7)
     c.line(left, y_top - 23 * mm, page_width - 20 * mm, y_top - 23 * mm)
     return y_top - 30 * mm
@@ -262,11 +265,14 @@ def generate_facture_pdf(data: dict, shop: dict) -> bytes:
     y -= 10 * mm
     left = 20 * mm
     _field(c, "Date", data.get("date"), left, y); y -= 6 * mm
+    _field(c, "Vendu par", data.get("vendeur_nom"), left, y); y -= 6 * mm
     if is_facture:
         client = data.get("client_info", {}) or {}
         _field(c, "Client", client.get("nom"), left, y); y -= 6 * mm
         _field(c, "Adresse", client.get("adresse"), left, y); y -= 6 * mm
         _field(c, "Email", client.get("email"), left, y); y -= 6 * mm
+        if client.get("siret"):
+            _field(c, "SIRET client", client.get("siret"), left, y); y -= 6 * mm
     y -= 4 * mm
 
     c.setFont("Helvetica-Bold", 10)
@@ -329,7 +335,8 @@ def generate_ticket_pdf(data: dict, shop: dict) -> bytes:
     c.line(3 * mm, y, width - 3 * mm, y); y -= 5 * mm
     c.setFont("Helvetica", 7)
     c.drawString(3 * mm, y, f"Ticket N° {data.get('numero', '')}"); y -= 4 * mm
-    c.drawString(3 * mm, y, f"Date: {data.get('date', '')}"); y -= 6 * mm
+    c.drawString(3 * mm, y, f"Date: {data.get('date', '')}"); y -= 4 * mm
+    c.drawString(3 * mm, y, f"Vendu par: {data.get('vendeur_nom', '')}"); y -= 6 * mm
     ht_total = 0
     for item in data.get("items", []):
         line_total = float(item.get("prix_unitaire", 0)) * float(item.get("quantite", 1))

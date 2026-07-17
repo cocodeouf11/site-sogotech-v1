@@ -26,6 +26,12 @@ class TicketCreate(BaseModel):
     client_info: Optional[dict] = None
 
 
+class TicketUpdate(BaseModel):
+    items: Optional[List[TicketItem]] = None
+    tva_percent: Optional[float] = None
+    client_info: Optional[dict] = None
+
+
 def serialize(t: dict) -> dict:
     t = dict(t)
     t["id"] = str(t["_id"])
@@ -88,8 +94,39 @@ async def create_ticket(payload: TicketCreate, user: dict = Depends(get_current_
     return serialize(created)
 
 
+def can_manage_ticket(user: dict, ticket: dict) -> bool:
+    return has_permission(user, "caisse", "delete_ticket") or ticket.get("vendeur_id") == user["_id"]
+
+
+@router.patch("/{ticket_id}")
+async def update_ticket(ticket_id: str, payload: TicketUpdate, user: dict = Depends(get_current_user)):
+    ticket = await db.tickets.find_one({"_id": ObjectId(ticket_id)})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Introuvable")
+    if not can_manage_ticket(user, ticket):
+        raise HTTPException(status_code=403, detail="Permission refusée")
+    update_data = payload.model_dump(exclude_unset=True)
+    if "items" in update_data:
+        items = [dict(i) for i in update_data["items"]]
+        update_data["items"] = items
+    else:
+        items = ticket["items"]
+    tva_percent = update_data.get("tva_percent", ticket.get("tva_percent", 20))
+    ht_total = sum(i["prix_unitaire"] * i["quantite"] for i in items)
+    tva_amount = ht_total * tva_percent / 100
+    update_data["total_ht"] = ht_total
+    update_data["total_tva"] = tva_amount
+    update_data["total_ttc"] = ht_total + tva_amount
+    await db.tickets.update_one({"_id": ObjectId(ticket_id)}, {"$set": update_data})
+    updated = await db.tickets.find_one({"_id": ObjectId(ticket_id)})
+    return serialize(updated)
+
+
 @router.delete("/{ticket_id}")
 async def delete_ticket(ticket_id: str, user: dict = Depends(get_current_user)):
+    ticket = await db.tickets.find_one({"_id": ObjectId(ticket_id)})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Introuvable")
     if not has_permission(user, "caisse", "delete_ticket"):
         raise HTTPException(status_code=403, detail="Permission refusée")
     await db.tickets.delete_one({"_id": ObjectId(ticket_id)})

@@ -12,7 +12,7 @@ export default function ShopSettingsPage() {
   const [shops, setShops] = useState([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ nom: "", type: "boutique", adresse: "", telephone: "" });
+  const [form, setForm] = useState({ nom: "", type: "boutique", adresse: "", telephone: "", siret: "" });
   const logoRefs = useRef({});
 
   const load = async () => {
@@ -21,8 +21,8 @@ export default function ShopSettingsPage() {
   };
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => { setEditing(null); setForm({ nom: "", type: "boutique", adresse: "", telephone: "" }); setOpen(true); };
-  const openEdit = (s) => { setEditing(s); setForm({ nom: s.nom, type: s.type, adresse: s.adresse, telephone: s.telephone }); setOpen(true); };
+  const openCreate = () => { setEditing(null); setForm({ nom: "", type: "boutique", adresse: "", telephone: "", siret: "" }); setOpen(true); };
+  const openEdit = (s) => { setEditing(s); setForm({ nom: s.nom, type: s.type, adresse: s.adresse, telephone: s.telephone, siret: s.siret || "" }); setOpen(true); };
 
   const save = async () => {
     try {
@@ -63,7 +63,8 @@ export default function ShopSettingsPage() {
               <button data-testid={`shop-edit-${s.id}`} onClick={() => openEdit(s)}><Pencil size={15} /></button>
             </div>
             <p className="text-sm text-muted-foreground">{s.adresse}</p>
-            <p className="text-sm text-muted-foreground mb-3">Tél: {s.telephone}</p>
+            <p className="text-sm text-muted-foreground">Tél: {s.telephone}</p>
+            {s.siret && <p className="text-xs text-muted-foreground mb-2">SIRET: {s.siret}</p>}
             <input type="file" accept="image/*" className="hidden" ref={(el) => (logoRefs.current[s.id] = el)} onChange={(e) => e.target.files[0] && uploadLogo(s.id, e.target.files[0])} data-testid={`shop-logo-input-${s.id}`} />
             <Button size="sm" variant="outline" className="gap-2" onClick={() => logoRefs.current[s.id].click()} data-testid={`shop-logo-button-${s.id}`}><Upload size={14} />Changer le logo</Button>
           </div>
@@ -81,6 +82,7 @@ export default function ShopSettingsPage() {
             </Select>
             <Input data-testid="shop-form-adresse" placeholder="Adresse" value={form.adresse} onChange={(e) => setForm({ ...form, adresse: e.target.value })} />
             <Input data-testid="shop-form-telephone" placeholder="Téléphone" value={form.telephone} onChange={(e) => setForm({ ...form, telephone: e.target.value })} />
+            <Input data-testid="shop-form-siret" placeholder="N° SIRET" value={form.siret} onChange={(e) => setForm({ ...form, siret: e.target.value })} />
           </div>
           <DialogFooter><Button data-testid="shop-form-save" onClick={save}>Enregistrer</Button></DialogFooter>
         </DialogContent>

@@ -29,7 +29,11 @@ export default function DevisFormPage() {
   useEffect(() => {
     (async () => {
       const [shopsRes, intRes] = await Promise.all([api.get("/shops"), api.get("/interventions")]);
-      setShop(shopsRes.data.find((s) => s.id === user.shop_id) || shopsRes.data[0]);
+      const myShop = shopsRes.data.find((s) => s.id === user.shop_id);
+      if (!myShop && isNew) {
+        toast.error("Aucune boutique n'est assignée à votre compte. Contactez un administrateur.");
+      }
+      setShop(myShop || shopsRes.data[0]);
       setInterventions(intRes.data.filter((i) => i.can_open));
       if (!isNew) {
         const { data: item } = await api.get(`/devis/${id}`);
@@ -60,6 +64,10 @@ export default function DevisFormPage() {
 
   const save = async () => {
     const signature_data = sigRef.current?.toDataURL() || data.signature_data || "";
+    if (isNew && !shop) {
+      toast.error("Impossible de créer : aucune boutique assignée à votre compte.");
+      return;
+    }
     try {
       if (isNew) {
         const { data: created } = await api.post("/devis", { ...data, shop_id: shop.id, signature_data });

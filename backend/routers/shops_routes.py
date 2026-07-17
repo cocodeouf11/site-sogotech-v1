@@ -18,6 +18,7 @@ class ShopCreate(BaseModel):
     type: str
     adresse: Optional[str] = ""
     telephone: Optional[str] = ""
+    siret: Optional[str] = ""
 
 
 class ShopUpdate(BaseModel):
@@ -25,6 +26,7 @@ class ShopUpdate(BaseModel):
     adresse: Optional[str] = None
     telephone: Optional[str] = None
     logo_url: Optional[str] = None
+    siret: Optional[str] = None
 
 
 def serialize(s: dict) -> dict:

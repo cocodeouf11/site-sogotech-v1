@@ -27,8 +27,11 @@ export default function InterventionFormPage() {
   useEffect(() => {
     (async () => {
       const shopsRes = await api.get("/shops");
-      const myShop = shopsRes.data.find((s) => s.id === user.shop_id) || shopsRes.data[0];
-      setShop(myShop);
+      const myShop = shopsRes.data.find((s) => s.id === user.shop_id);
+      if (!myShop && isNew) {
+        toast.error("Aucune boutique n'est assignée à votre compte. Contactez un administrateur.");
+      }
+      setShop(myShop || shopsRes.data[0]);
       if (!isNew) {
         const { data: item } = await api.get(`/interventions/${id}`);
         setData(item);
@@ -40,6 +43,10 @@ export default function InterventionFormPage() {
 
   const save = async () => {
     const signature_data = sigRef.current?.toDataURL() || data.signature_data || "";
+    if (isNew && !shop) {
+      toast.error("Impossible de créer : aucune boutique assignée à votre compte.");
+      return;
+    }
     try {
       if (isNew) {
         const { data: created } = await api.post("/interventions", { ...data, shop_id: shop.id, signature_data });

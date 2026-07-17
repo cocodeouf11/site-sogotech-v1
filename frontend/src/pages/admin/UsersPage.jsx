@@ -45,6 +45,10 @@ export default function UsersPage() {
   };
 
   const save = async () => {
+    if (!form.shop_id) {
+      toast.error("Merci de sélectionner une boutique / dépôt d'affectation");
+      return;
+    }
     try {
       if (editing) {
         const payload = { ...form };

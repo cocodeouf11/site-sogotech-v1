@@ -19,6 +19,7 @@ class ArticleCreate(BaseModel):
     categorie: Optional[str] = ""
     shop_id: Optional[str] = None
     prix: Optional[float] = 0
+    code: Optional[str] = None
 
 
 class ArticleUpdate(BaseModel):
@@ -27,6 +28,7 @@ class ArticleUpdate(BaseModel):
     categorie: Optional[str] = None
     prix: Optional[float] = None
     photo_url: Optional[str] = None
+    code: Optional[str] = None
 
 
 def serialize(a: dict) -> dict:
@@ -42,11 +44,26 @@ async def list_articles(user: dict = Depends(get_current_user)):
     return [serialize(a) for a in articles]
 
 
+async def next_article_code() -> str:
+    counter = await db.counters.find_one_and_update(
+        {"_id": "ARTICLE"}, {"$inc": {"seq": 1}}, upsert=True, return_document=True
+    )
+    return f"ART-{counter['seq']:04d}"
+
+
 @router.post("")
 async def create_article(payload: ArticleCreate, user: dict = Depends(get_current_user)):
     if not has_permission(user, "stock", "add"):
         raise HTTPException(status_code=403, detail="Permission refusée")
     doc = payload.model_dump()
+    code = (doc.get("code") or "").strip()
+    if code:
+        existing = await db.articles.find_one({"code": code})
+        if existing:
+            raise HTTPException(status_code=400, detail="Cet ID article existe déjà")
+        doc["code"] = code
+    else:
+        doc["code"] = await next_article_code()
     doc["photo_url"] = ""
     doc["created_at"] = datetime.now(timezone.utc).isoformat()
     result = await db.articles.insert_one(doc)
@@ -64,6 +81,15 @@ async def update_article(article_id: str, payload: ArticleUpdate, user: dict = D
     else:
         if not has_permission(user, "stock", "edit"):
             raise HTTPException(status_code=403, detail="Permission refusée")
+    if "code" in update_data:
+        code = (update_data.get("code") or "").strip()
+        if code:
+            existing = await db.articles.find_one({"code": code, "_id": {"$ne": ObjectId(article_id)}})
+            if existing:
+                raise HTTPException(status_code=400, detail="Cet ID article existe déjà")
+            update_data["code"] = code
+        else:
+            update_data.pop("code")
     if update_data:
         await db.articles.update_one({"_id": ObjectId(article_id)}, {"$set": update_data})
     updated = await db.articles.find_one({"_id": ObjectId(article_id)})
