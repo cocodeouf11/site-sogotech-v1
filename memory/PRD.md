@@ -30,6 +30,14 @@ Application web de gestion pour entreprise avec deux modules : **Boutique** et *
 - Nouvel outil **Étiquette** (`/depot/etiquette`) répliquant fidèlement l'outil HTML fourni par l'utilisateur : upload PDF/JPG/PNG, rendu page 1 via pdf.js (CDN, cadrage fixe calibré x0=0.6067,y0=0.1525,x1=0.9812,y1=0.8439, échelle 2.2), aperçu découpé, boutons Imprimer / Télécharger PNG / Télécharger PDF (jsPDF CDN). 100% côté client, aucune dépendance backend.
 - Tests : 35/35 backend (28 précédents + 7 nouveaux dépôt), frontend Dépôt + Étiquette validés bout en bout, aucun bug résiduel.
 
+## Itération 3 (17 juillet 2026) — SIRET, recherche, permissions ticket/intervention
+- SIRET boutique : nouveau champ dans Admin > Boutiques, affiché sur l'en-tête de tous les documents (écran + PDF).
+- Caisse : recherche articles + affichage en liste (au lieu de grille), recherche historique, nom du créateur affiché sur ticket/facture, actions Voir/Modifier/Supprimer par ligne (permission caisse.delete_ticket + créateur), champ SIRET client sur facture.
+- Stock : barre de recherche, champ "ID article" (auto-généré ART-NNNN si vide, sinon valeur saisie avec contrôle d'unicité).
+- Intervention/Devis/Reprise : barre de recherche sur les listes, lien "Modifier"/"Voir" selon permission, bouton Supprimer gaté par permission.
+- Correctif défensif : blocage de la création si l'utilisateur n'a pas de boutique valide assignée (au lieu d'un fallback silencieux vers une autre boutique).
+- Tests : 43/43 backend, vérification bout en bout du signalement "même boutique ne peut pas visualiser" — confirmé fonctionnel (utilisateurs de la même boutique voient et ouvrent bien les documents des collègues).
+
 ## Ce qui est implémenté (17 juillet 2026)
 - Auth PIN + JWT cookie, seed admin (PIN 123456), seed boutique + dépôt par défaut.
 - Gestion utilisateurs : CRUD, grades multiples, permissions granulaires par module (reprise/devis/caisse/intervention/stock/communication), templates de permissions par grade avec surcharge admin.
