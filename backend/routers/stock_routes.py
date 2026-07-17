@@ -82,7 +82,7 @@ async def delete_article(article_id: str, user: dict = Depends(get_current_user)
 
 @router.post("/{article_id}/photo")
 async def upload_photo(article_id: str, file: UploadFile = File(...), user: dict = Depends(get_current_user)):
-    if not has_permission(user, "stock", "edit"):
+    if not (has_permission(user, "stock", "edit") or has_permission(user, "stock", "add")):
         raise HTTPException(status_code=403, detail="Permission refusée")
     os.makedirs(os.path.join(UPLOAD_DIR, "articles"), exist_ok=True)
     ext = os.path.splitext(file.filename)[1] or ".jpg"

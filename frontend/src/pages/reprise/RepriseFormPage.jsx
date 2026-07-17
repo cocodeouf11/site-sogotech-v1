@@ -68,13 +68,19 @@ export default function RepriseFormPage() {
 
   const save = async () => {
     const signature_data = sigRef.current?.toDataURL() || data.signature_data || "";
+    const payload = {
+      ...data,
+      signature_data,
+      batterie_pourcentage: data.batterie_pourcentage === "" || data.batterie_pourcentage === null ? null : Number(data.batterie_pourcentage),
+      offre_rachat: data.offre_rachat === "" || data.offre_rachat === null || Number.isNaN(Number(data.offre_rachat)) ? 0 : Number(data.offre_rachat),
+    };
     try {
       if (isNew) {
-        const { data: created } = await api.post("/reprises", { ...data, shop_id: shop.id, signature_data });
+        const { data: created } = await api.post("/reprises", { ...payload, shop_id: shop.id });
         toast.success(`Reprise ${created.numero} créée`);
         navigate(`/reprises/${created.id}`);
       } else {
-        await api.patch(`/reprises/${id}`, { ...data, signature_data });
+        await api.patch(`/reprises/${id}`, payload);
         toast.success("Reprise mise à jour");
       }
     } catch (e) {

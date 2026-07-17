@@ -11,7 +11,7 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 from database import db, client
-from auth_utils import hash_pin
+from auth_utils import hash_pin, verify_pin
 from constants import GRADE_PERMISSION_TEMPLATES, DEFAULT_PERMISSIONS
 from routers import (
     auth_routes,
@@ -94,8 +94,8 @@ async def seed_data():
         })
 
     admin = await db.users.find_one({"is_admin": True})
+    admin_pin = os.environ.get("ADMIN_PIN", "123456")
     if not admin:
-        admin_pin = os.environ.get("ADMIN_PIN", "123456")
         await db.users.insert_one({
             "nom": "Admin",
             "prenom": "Super",
@@ -110,6 +110,9 @@ async def seed_data():
             "created_at": datetime.now(timezone.utc).isoformat(),
         })
         logger.info("Admin seeded with PIN from ADMIN_PIN env var")
+    elif not verify_pin(admin_pin, admin.get("pin_hash", "")):
+        await db.users.update_one({"_id": admin["_id"]}, {"$set": {"pin_hash": hash_pin(admin_pin)}})
+        logger.info("Admin PIN updated to match ADMIN_PIN env var")
 
 
 @app.on_event("shutdown")

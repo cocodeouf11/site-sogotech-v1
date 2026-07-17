@@ -3,7 +3,7 @@ import re
 import uuid
 from typing import Optional, List
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Response
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Response, Form
 from pydantic import BaseModel
 from bson import ObjectId
 import fitz
@@ -72,7 +72,7 @@ async def get_order(order_id: str, user: dict = Depends(get_current_user)):
 
 
 @router.post("/orders")
-async def create_order(numero: str, delivery: UploadFile = File(...), label: Optional[UploadFile] = File(None), user: dict = Depends(get_current_user)):
+async def create_order(numero: str = Form(...), delivery: UploadFile = File(...), label: Optional[UploadFile] = File(None), user: dict = Depends(get_current_user)):
     os.makedirs(os.path.join(UPLOAD_DIR, "depot"), exist_ok=True)
     delivery_filename = f"{uuid.uuid4()}.pdf"
     delivery_path = os.path.join(UPLOAD_DIR, "depot", delivery_filename)

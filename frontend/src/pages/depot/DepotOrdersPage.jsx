@@ -33,10 +33,11 @@ export default function DepotOrdersPage() {
       return;
     }
     const fd = new FormData();
+    fd.append("numero", numero);
     fd.append("delivery", deliveryRef.current.files[0]);
     if (labelRef.current.files[0]) fd.append("label", labelRef.current.files[0]);
     try {
-      await api.post(`/depot/orders?numero=${encodeURIComponent(numero)}`, fd, { headers: { "Content-Type": "multipart/form-data" } });
+      await api.post(`/depot/orders`, fd, { headers: { "Content-Type": "multipart/form-data" } });
       toast.success("Commande créée");
       setOpen(false);
       setNumero("");
