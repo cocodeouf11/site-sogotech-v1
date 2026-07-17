@@ -1,0 +1,50 @@
+{
+  "summary": "First testing pass on Boutique/Dépôt French business management app. Backend: 28/28 pytest tests passed covering auth (PIN), users/permissions (Vendeur grade), shops CRUD, stock (with permission enforcement), caisse (ticket+facture with VAT), interventions/devis/reprises (CRUD + PDF + data isolation with can_open flag + 403 on cross-shop detail), communication (messages + help tickets + comments), depot (upload PDF, parse lines, manual add, +/- increment, reset, status termine). Frontend: PIN login, Dashboard stat cards, Stock CRUD, Caisse cart with correct HT/TVA/TTC (10€ HT → 2€ TVA → 12€ TTC), Intervention with signature pad → INT-2026-XXXX, Reprise phone diagram click marks (avant/arriere), Users/Boutiques admin pages, Depot page, Theme toggle (dark/light) all working. One critical bug found in Reprise create form.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/depot/orders", "issue": "'numero' is a query-string param (not Form field) even though the endpoint also accepts multipart file uploads. Non-blocking but inconsistent."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "RepriseFormPage",
+        "issue": "POST /api/reprises returns 422 'Input should be a valid integer, unable to parse string as an integer'. Root cause: initial state has `batterie_pourcentage: \"\"` (empty string) and the input's onChange stores `e.target.value` (string). When user does not enter a battery %, the empty string is sent to backend which expects Optional[int]. This BLOCKS the entire Reprise creation flow from the UI even though backend endpoint itself works.",
+        "selector": "[data-testid=\"rep-batterie\"] / [data-testid=\"reprise-save-button\"]",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "FIX (RepriseFormPage.jsx): before POST, coerce batterie_pourcentage: `batterie_pourcentage: data.batterie_pourcentage === '' || data.batterie_pourcentage === null ? null : Number(data.batterie_pourcentage)`. Also same for offre_rachat if user leaves blank (currently defaults to 0 via Number(e.target.value) which produces NaN when input empty).",
+    "OPTIONAL (depot_routes.py): move `numero` to a Form(...) field so create_order is fully multipart-consistent."
+  ],
+  "critical_code_review_comments": [
+    "auth cookie set with `samesite=none, secure=True` — correct for cross-origin frontend/backend on preview URL.",
+    "Data isolation implemented correctly: list endpoints return `can_open` flag and detail endpoints return 403 when shop mismatch. Verified for interventions; devis and reprises use the same `can_view_shop` helper.",
+    "PDF endpoints return application/pdf with valid %PDF magic bytes for tickets, factures, interventions, devis, reprises.",
+    "Numero generation via atomic MongoDB counter is race-safe (find_one_and_update with upsert).",
+    "RepriseFormPage numeric fields don't coerce input value to number → produces 422 (see UI bug).",
+    "In stock_routes.py, `upload_photo` requires stock.edit permission — a fresh created article by a user with `add` but no `edit` cannot upload its own photo. Minor: consider allowing edit-quantity users or 'add' users to attach photo on their own article.",
+    "Communication messages endpoint has no cross-user access restriction on GET /messages (only filters by involving current user via $or — correct behavior).",
+    "seed_data does not update admin PIN if ADMIN_PIN env var changes after first run — playbook says seed_admin must update existing admin. Consider updating pin_hash if ADMIN_PIN differs.",
+    "Depot create_order uses `numero: str` as a query-string param when combined with UploadFile. Frontend passes it via query which works but is inconsistent with multipart pattern."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py (new)"
+  ],
+  "success_rate": {"backend": "100% (28/28)", "frontend": "~92% (only Reprise UI create broken by 422)"},
+  "test_credentials": "Admin PIN: 123456 (from /app/memory/test_credentials.md). Test user created during tests: nom TEST_Vendeur / prenom Jean / PIN 654321 (auto-cleaned).",
+  "seed_data_creation": "Backend tests create prefixed TEST_ data (users, shops, articles, tickets, interventions, devis, reprises, depot orders). Most cleaned up in fixtures; some (interventions, devis, reprises, tickets, messages, help_tickets) persist and are visible in UI as TEST_* entries.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Only 1 confirmed UI bug: Reprise creation posts empty-string `batterie_pourcentage`, causing 422. Fix in RepriseFormPage.jsx save() by normalising numeric fields. After fix, verify: (1) create reprise without touching batterie field → success, (2) create reprise with batterie=85 → success, (3) verify offre_rachat=0 default still works. All other backend endpoints and frontend flows are green.",
+  "rca of the issue": "RepriseFormPage.jsx initialises `batterie_pourcentage: \"\"` and its Input passes `e.target.value` directly. Backend Pydantic model `ReprisCreate.batterie_pourcentage: Optional[int] = None` rejects the empty string with 422. Reproduction: login as admin → /reprises/new → fill only client_nom, modele, imei → click Enregistrer → toast: 'Input should be a valid integer, unable to parse string as an integer'. Mitigation: normalise before POST: `batterie_pourcentage: data.batterie_pourcentage === '' ? null : Number(data.batterie_pourcentage)`."
+}

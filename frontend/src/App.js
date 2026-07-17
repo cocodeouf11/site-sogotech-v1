@@ -1,54 +1,54 @@
-import { useEffect } from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
-import { HOME } from "@/constants/testIds";
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          data-testid={HOME.emergentLink}
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
+import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import Login from "@/pages/Login";
+import Dashboard from "@/pages/Dashboard";
+import StockPage from "@/pages/stock/StockPage";
+import CaissePage from "@/pages/caisse/CaissePage";
+import InterventionListPage from "@/pages/intervention/InterventionListPage";
+import InterventionFormPage from "@/pages/intervention/InterventionFormPage";
+import DevisListPage from "@/pages/devis/DevisListPage";
+import DevisFormPage from "@/pages/devis/DevisFormPage";
+import RepriseListPage from "@/pages/reprise/RepriseListPage";
+import RepriseFormPage from "@/pages/reprise/RepriseFormPage";
+import MessagesPage from "@/pages/communication/MessagesPage";
+import HelpTicketsPage from "@/pages/communication/HelpTicketsPage";
+import DepotOrdersPage from "@/pages/depot/DepotOrdersPage";
+import DepotOrderDetailPage from "@/pages/depot/DepotOrderDetailPage";
+import UsersPage from "@/pages/admin/UsersPage";
+import ShopSettingsPage from "@/pages/admin/ShopSettingsPage";
 
 function App() {
   return (
     <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <ThemeProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <Toaster position="top-right" />
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/stock" element={<ProtectedRoute><StockPage /></ProtectedRoute>} />
+              <Route path="/caisse" element={<ProtectedRoute><CaissePage /></ProtectedRoute>} />
+              <Route path="/interventions" element={<ProtectedRoute><InterventionListPage /></ProtectedRoute>} />
+              <Route path="/interventions/:id" element={<ProtectedRoute><InterventionFormPage /></ProtectedRoute>} />
+              <Route path="/devis" element={<ProtectedRoute><DevisListPage /></ProtectedRoute>} />
+              <Route path="/devis/:id" element={<ProtectedRoute><DevisFormPage /></ProtectedRoute>} />
+              <Route path="/reprises" element={<ProtectedRoute><RepriseListPage /></ProtectedRoute>} />
+              <Route path="/reprises/:id" element={<ProtectedRoute><RepriseFormPage /></ProtectedRoute>} />
+              <Route path="/communication" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
+              <Route path="/communication/tickets" element={<ProtectedRoute><HelpTicketsPage /></ProtectedRoute>} />
+              <Route path="/depot" element={<ProtectedRoute><DepotOrdersPage /></ProtectedRoute>} />
+              <Route path="/depot/:id" element={<ProtectedRoute><DepotOrderDetailPage /></ProtectedRoute>} />
+              <Route path="/admin/users" element={<ProtectedRoute adminOnly><UsersPage /></ProtectedRoute>} />
+              <Route path="/admin/shops" element={<ProtectedRoute adminOnly><ShopSettingsPage /></ProtectedRoute>} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </ThemeProvider>
     </div>
   );
 }

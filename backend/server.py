@@ -1,73 +1,55 @@
-from fastapi import FastAPI, APIRouter
-from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
-from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
-import uuid
 from datetime import datetime, timezone
-
+from pathlib import Path
+from fastapi import FastAPI, APIRouter
+from fastapi.staticfiles import StaticFiles
+from starlette.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+from database import db, client
+from auth_utils import hash_pin
+from constants import GRADE_PERMISSION_TEMPLATES, DEFAULT_PERMISSIONS
+from routers import (
+    auth_routes,
+    users_routes,
+    shops_routes,
+    stock_routes,
+    caisse_routes,
+    intervention_routes,
+    devis_routes,
+    reprise_routes,
+    communication_routes,
+    depot_routes,
+)
 
-# Create the main app without a prefix
 app = FastAPI()
-
-# Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class StatusCheckCreate(BaseModel):
-    client_name: str
-
-# Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Boutique/Dépôt API"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
-
-# Include the router in the main app
 app.include_router(api_router)
+app.include_router(auth_routes.router)
+app.include_router(users_routes.router)
+app.include_router(shops_routes.router)
+app.include_router(stock_routes.router)
+app.include_router(caisse_routes.router)
+app.include_router(intervention_routes.router)
+app.include_router(devis_routes.router)
+app.include_router(reprise_routes.router)
+app.include_router(communication_routes.router)
+app.include_router(depot_routes.router)
+
+upload_dir = os.path.join(str(ROOT_DIR), os.environ.get("UPLOAD_DIR", "uploads"))
+os.makedirs(upload_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,
@@ -77,12 +59,58 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+
+@app.on_event("startup")
+async def seed_data():
+    await db.users.create_index("nom")
+    await db.articles.create_index("nom")
+
+    shop = await db.shops.find_one({"type": "boutique"})
+    if not shop:
+        result = await db.shops.insert_one({
+            "nom": "Boutique Centrale",
+            "type": "boutique",
+            "adresse": "12 Rue de la République, 75001 Paris",
+            "telephone": "01 23 45 67 89",
+            "logo_url": "",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+        shop_id = str(result.inserted_id)
+    else:
+        shop_id = str(shop["_id"])
+
+    depot = await db.shops.find_one({"type": "depot"})
+    if not depot:
+        await db.shops.insert_one({
+            "nom": "Dépôt Central",
+            "type": "depot",
+            "adresse": "5 Zone Industrielle, 93000 Bobigny",
+            "telephone": "01 98 76 54 32",
+            "logo_url": "",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+
+    admin = await db.users.find_one({"is_admin": True})
+    if not admin:
+        admin_pin = os.environ.get("ADMIN_PIN", "123456")
+        await db.users.insert_one({
+            "nom": "Admin",
+            "prenom": "Super",
+            "poste": "Administrateur",
+            "grades": ["Gestionnaire toutes boutiques"],
+            "shop_id": shop_id,
+            "telephone": "",
+            "pin_hash": hash_pin(admin_pin),
+            "is_admin": True,
+            "active": True,
+            "permissions": GRADE_PERMISSION_TEMPLATES["Gestionnaire toutes boutiques"],
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+        logger.info("Admin seeded with PIN from ADMIN_PIN env var")
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
