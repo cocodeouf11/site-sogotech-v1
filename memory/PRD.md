@@ -38,6 +38,14 @@ Application web de gestion pour entreprise avec deux modules : **Boutique** et *
 - Correctif défensif : blocage de la création si l'utilisateur n'a pas de boutique valide assignée (au lieu d'un fallback silencieux vers une autre boutique).
 - Tests : 43/43 backend, vérification bout en bout du signalement "même boutique ne peut pas visualiser" — confirmé fonctionnel (utilisateurs de la même boutique voient et ouvrent bien les documents des collègues).
 
+## Itération 4 (18 juillet 2026) — Responsive mobile/tablette
+- Sidebar transformée en tiroir (drawer) sur mobile/tablette (<1024px) avec bouton hamburger, overlay, bouton fermeture, fermeture auto à la navigation ; reste statique sur desktop.
+- Correctif critique (signalé par capture d'écran) : pastille de picking Dépôt qui recouvrait le texte du produit sur mobile — désormais empilée sous le texte (colonne sur mobile, ligne dès `sm:`).
+- Toutes les listes (Intervention/Devis/Reprise/Utilisateurs) défilables horizontalement sur mobile au lieu d'écraser les colonnes ; barres de recherche + boutons empilés verticalement sur petit écran.
+- Formulaires A4 (Intervention/Devis/Reprise) et en-tête de document en une colonne sur mobile, padding réduit, aucun débordement horizontal.
+- Caisse : lignes d'historique réorganisées pour ne plus se chevaucher sur petit écran.
+- Tests : 100% (9/9) validés par l'agent de test sur mobile (390px), tablette (768px) et desktop (1920px), aucune régression détectée.
+
 ## Ce qui est implémenté (17 juillet 2026)
 - Auth PIN + JWT cookie, seed admin (PIN 123456), seed boutique + dépôt par défaut.
 - Gestion utilisateurs : CRUD, grades multiples, permissions granulaires par module (reprise/devis/caisse/intervention/stock/communication), templates de permissions par grade avec surcharge admin.
