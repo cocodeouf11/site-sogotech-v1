@@ -77,13 +77,13 @@ export default function StockPage() {
 
   return (
     <Layout title="Stock">
-      <div className="flex justify-between items-center gap-3 mb-5">
-        <div className="relative w-full max-w-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+        <div className="relative w-full sm:max-w-sm">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input data-testid="stock-search-input" placeholder="Rechercher un article, une catégorie, un ID..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
         {hasPerm(user, "stock", "add") && (
-          <Button data-testid="stock-add-button" onClick={openCreate} className="gap-2 shrink-0">
+          <Button data-testid="stock-add-button" onClick={openCreate} className="gap-2 shrink-0 w-full sm:w-auto">
             <Plus size={16} /> Ajouter un article
           </Button>
         )}

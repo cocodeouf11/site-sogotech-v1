@@ -65,10 +65,10 @@ export default function InterventionFormPage() {
 
   return (
     <Layout title="Fiche d'intervention">
-      <div className="a4-sheet max-w-4xl mx-auto p-8 sm:p-12 rounded-md">
+      <div className="a4-sheet max-w-4xl mx-auto p-4 sm:p-8 md:p-12 rounded-md">
         <DocumentHeader shop={shop} numero={data.numero || "(auto)"} />
         <h2 className="font-heading text-xl font-bold text-center mb-6">FICHE D'INTERVENTION</h2>
-        <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 text-sm">
           <div><span className="font-semibold">Vendeur:</span> {data.vendeur_nom || `${user.prenom} ${user.nom}`}</div>
           <div><span className="font-semibold">Date:</span> {data.date || today}</div>
           <Input data-testid="int-client-nom" disabled={!canEdit} placeholder="Nom / prénom client" value={data.client_nom} onChange={(e) => setData({ ...data, client_nom: e.target.value })} />

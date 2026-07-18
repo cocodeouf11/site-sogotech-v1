@@ -34,19 +34,19 @@ export default function DevisListPage() {
 
   return (
     <Layout title="Devis">
-      <div className="flex justify-between items-center gap-3 mb-5">
-        <div className="relative w-full max-w-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+        <div className="relative w-full sm:max-w-sm">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input data-testid="devis-search-input" placeholder="Rechercher par n°, client, vendeur..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
         {hasPerm(user, "devis", "create") && (
           <Link to="/devis/new">
-            <Button data-testid="devis-add-button" className="gap-2 shrink-0"><Plus size={16} /> Nouveau devis</Button>
+            <Button data-testid="devis-add-button" className="gap-2 shrink-0 w-full sm:w-auto"><Plus size={16} /> Nouveau devis</Button>
           </Link>
         )}
       </div>
-      <div className="rounded-xl border border-border bg-card overflow-hidden" data-testid="devis-list">
-        <table className="w-full text-sm">
+      <div className="rounded-xl border border-border bg-card overflow-x-auto" data-testid="devis-list">
+        <table className="w-full text-sm min-w-[560px]">
           <thead className="bg-secondary text-left">
             <tr><th className="p-3">N°</th><th className="p-3">Date</th><th className="p-3">Client</th><th className="p-3">Statut</th><th className="p-3"></th></tr>
           </thead>

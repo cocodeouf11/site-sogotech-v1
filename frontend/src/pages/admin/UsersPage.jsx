@@ -101,8 +101,8 @@ export default function UsersPage() {
       <div className="flex justify-end mb-5">
         <Button data-testid="user-add-button" onClick={openCreate} className="gap-2"><Plus size={16} />Nouvel utilisateur</Button>
       </div>
-      <div className="rounded-xl border border-border bg-card overflow-hidden" data-testid="user-list">
-        <table className="w-full text-sm">
+      <div className="rounded-xl border border-border bg-card overflow-x-auto" data-testid="user-list">
+        <table className="w-full text-sm min-w-[600px]">
           <thead className="bg-secondary text-left">
             <tr><th className="p-3">Nom</th><th className="p-3">Poste</th><th className="p-3">Grades</th><th className="p-3">Boutique</th><th className="p-3"></th></tr>
           </thead>
@@ -128,7 +128,7 @@ export default function UsersPage() {
         <DialogContent data-testid="user-form-dialog" className="max-w-lg">
           <DialogHeader><DialogTitle>{editing ? "Modifier l'utilisateur" : "Nouvel utilisateur"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input data-testid="user-form-nom" placeholder="Nom" value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} />
               <Input data-testid="user-form-prenom" placeholder="Prénom" value={form.prenom} onChange={(e) => setForm({ ...form, prenom: e.target.value })} />
             </div>
@@ -141,7 +141,7 @@ export default function UsersPage() {
             <Input data-testid="user-form-pin" placeholder={editing ? "Nouveau code PIN (laisser vide pour ne pas changer)" : "Code PIN (6 chiffres)"} value={form.pin} onChange={(e) => setForm({ ...form, pin: e.target.value })} />
             <div>
               <p className="text-sm text-muted-foreground mb-2">Grades (multiple possible)</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {ALL_GRADES.map((g) => (
                   <label key={g} className="flex items-center gap-2 text-sm">
                     <Checkbox data-testid={`user-form-grade-${g}`} checked={form.grades.includes(g)} onCheckedChange={() => toggleGrade(g)} />

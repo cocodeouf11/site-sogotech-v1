@@ -53,13 +53,12 @@ export default function DepotOrdersPage() {
 
   return (
     <Layout title="Dépôt">
-      <div className="flex gap-2 mb-5 no-print">
+      <div className="flex flex-wrap gap-2 mb-5 no-print">
         <Button variant="outline" data-testid="depot-tab-orders" className="gap-2"><PackageSearch size={16} />Commandes</Button>
         <Link to="/depot/etiquette">
           <Button variant="outline" data-testid="depot-tab-etiquette" className="gap-2"><Tag size={16} />Étiquette</Button>
         </Link>
-        <div className="flex-1" />
-        <Button data-testid="depot-add-button" onClick={() => setOpen(true)} className="gap-2"><Upload size={16} />Importer un bon de livraison</Button>
+        <Button data-testid="depot-add-button" onClick={() => setOpen(true)} className="gap-2 sm:ml-auto"><Upload size={16} />Importer un bon de livraison</Button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="depot-order-list">
         {orders.map((o) => {

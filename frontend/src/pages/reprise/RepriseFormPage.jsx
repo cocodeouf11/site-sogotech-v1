@@ -98,11 +98,11 @@ export default function RepriseFormPage() {
 
   return (
     <Layout title="Fiche de reprise téléphone">
-      <div className="a4-sheet max-w-4xl mx-auto p-8 sm:p-12 rounded-md">
+      <div className="a4-sheet max-w-4xl mx-auto p-4 sm:p-8 md:p-12 rounded-md">
         <DocumentHeader shop={shop} numero={data.numero || "(auto)"} />
         <h2 className="font-heading text-xl font-bold text-center mb-6">FICHE DE REPRISE TÉLÉPHONE</h2>
 
-        <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 text-sm">
           <div><span className="font-semibold">Vendeur:</span> {data.vendeur_nom || `${user.prenom} ${user.nom}`}</div>
           <div><span className="font-semibold">Date:</span> {data.date || today}</div>
           <Input data-testid="rep-client-nom" disabled={!canEdit} placeholder="Nom client" value={data.client_nom} onChange={(e) => setData({ ...data, client_nom: e.target.value })} />
@@ -136,7 +136,7 @@ export default function RepriseFormPage() {
         <Input data-testid="rep-batterie" disabled={!canEdit} type="number" placeholder="Batterie %" className="w-32 mb-6" value={data.batterie_pourcentage} onChange={(e) => setData({ ...data, batterie_pourcentage: e.target.value })} />
 
         <p className="font-semibold text-sm mb-2">Schéma - cliquez pour marquer un défaut</p>
-        <div className="flex gap-8 justify-center mb-6">
+        <div className="flex gap-4 sm:gap-8 justify-center mb-6">
           <div>
             <p className="text-xs text-center mb-1 text-muted-foreground">Avant</p>
             <PhoneDiagram marks={data.defauts_marks} onAdd={canEdit ? addMark : () => {}} face="avant" />
@@ -150,7 +150,7 @@ export default function RepriseFormPage() {
         <label className="text-sm font-semibold">Remarques</label>
         <Textarea data-testid="rep-remarques" disabled={!canEdit} className="mb-4 h-24" value={data.remarques} onChange={(e) => setData({ ...data, remarques: e.target.value })} />
 
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <Input data-testid="rep-piece" disabled={!canEdit} placeholder="Pièce à remplacer" value={data.piece_a_remplacer} onChange={(e) => setData({ ...data, piece_a_remplacer: e.target.value })} />
           <Input data-testid="rep-offre" disabled={!canEdit} type="number" placeholder="Offre de rachat (€)" value={data.offre_rachat} onChange={(e) => setData({ ...data, offre_rachat: Number(e.target.value) })} />
         </div>

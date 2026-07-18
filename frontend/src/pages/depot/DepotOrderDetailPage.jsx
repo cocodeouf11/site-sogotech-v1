@@ -60,19 +60,19 @@ export default function DepotOrderDetailPage() {
 
   return (
     <Layout title="Dépôt">
-      <div className="flex items-center justify-between mb-6 no-print">
-        <div className="flex items-center gap-4">
-          <Link to="/depot" data-testid="depot-back-button" className="p-2 rounded-lg border border-border hover:bg-accent transition-colors duration-200">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6 no-print">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          <Link to="/depot" data-testid="depot-back-button" className="p-2 rounded-lg border border-border hover:bg-accent transition-colors duration-200 shrink-0">
             <ArrowLeft size={18} />
           </Link>
-          <div>
-            <p className="font-heading text-2xl font-bold" data-testid="depot-order-title">CMD {order.numero}</p>
+          <div className="min-w-0">
+            <p className="font-heading text-xl sm:text-2xl font-bold truncate" data-testid="depot-order-title">CMD {order.numero}</p>
             <p className="text-sm text-muted-foreground" data-testid="depot-order-progress">{picked}/{total} · {percent}%</p>
           </div>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" data-testid="depot-actions-button" className="gap-2">ACTIONS <MoreVertical size={16} /></Button>
+            <Button variant="outline" data-testid="depot-actions-button" className="gap-2 shrink-0">ACTIONS <MoreVertical size={16} /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem asChild>
@@ -105,12 +105,12 @@ export default function DepotOrderDetailPage() {
           return (
             <div
               key={line.id}
-              className={`rounded-xl border-2 border-dashed p-4 flex items-center justify-between gap-4 min-h-[64px] ${done ? "border-emerald-500/40 bg-emerald-500/5" : "border-border bg-card"}`}
+              className={`rounded-xl border-2 border-dashed p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 min-h-[64px] ${done ? "border-emerald-500/40 bg-emerald-500/5" : "border-border bg-card"}`}
               data-testid={`depot-line-${line.id}`}
             >
               <div className="min-w-0">
-                <p className="font-medium truncate">{line.description}</p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="font-medium break-words">{line.description}</p>
+                <p className="text-xs text-muted-foreground mt-1 break-words">
                   {line.ugs && <>UGS : {line.ugs} </>}
                   Étagère : {line.etagere} | Colonne : {line.colonne} | Tiroir : {line.tiroir} | Bac : {line.bac}
                 </p>

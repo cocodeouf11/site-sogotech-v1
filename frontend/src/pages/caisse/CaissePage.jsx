@@ -153,36 +153,40 @@ export default function CaissePage() {
           </div>
 
           <div className="mt-6">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
               <p className="font-heading font-semibold">Historique récent</p>
-              <div className="relative w-56">
+              <div className="relative w-full sm:w-56">
                 <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input data-testid="caisse-history-search" placeholder="Rechercher..." value={historySearch} onChange={(e) => setHistorySearch(e.target.value)} className="pl-8 h-8 text-sm" />
               </div>
             </div>
             <div className="space-y-1" data-testid="caisse-history-list">
               {filteredHistory.map((t) => (
-                <div key={t.id} className="flex justify-between items-center text-sm py-2 px-3 rounded-lg border border-border bg-card gap-2" data-testid={`history-row-${t.id}`}>
-                  <span data-testid={`history-numero-${t.id}`} className="truncate">{t.numero} — {t.type}</span>
-                  <span className="text-xs text-muted-foreground truncate">{t.vendeur_nom}</span>
-                  <span className="shrink-0">{t.total_ttc?.toFixed(2)} €</span>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <a href={`${api.defaults.baseURL}/caisse/${t.id}/pdf`} target="_blank" rel="noreferrer" data-testid={`history-view-${t.id}`} title="Voir">
-                      <Eye size={15} className="text-muted-foreground hover:text-foreground" />
-                    </a>
-                    <a href={`${api.defaults.baseURL}/caisse/${t.id}/pdf`} target="_blank" rel="noreferrer" data-testid={`history-pdf-${t.id}`} title="Télécharger PDF">
-                      <FileDown size={15} className="text-primary" />
-                    </a>
-                    {canManage(t) && (
-                      <button data-testid={`history-edit-${t.id}`} onClick={() => openEditTicket(t)} title="Modifier">
-                        <Pencil size={14} />
-                      </button>
-                    )}
-                    {hasPerm(user, "caisse", "delete_ticket") && (
-                      <button data-testid={`history-delete-${t.id}`} onClick={() => removeTicket(t.id)} title="Supprimer" className="text-destructive">
-                        <Trash2 size={14} />
-                      </button>
-                    )}
+                <div key={t.id} className="flex flex-wrap items-center justify-between text-sm py-2 px-3 rounded-lg border border-border bg-card gap-2" data-testid={`history-row-${t.id}`}>
+                  <div className="min-w-0">
+                    <span data-testid={`history-numero-${t.id}`} className="block truncate">{t.numero} — {t.type}</span>
+                    <span className="text-xs text-muted-foreground truncate block">{t.vendeur_nom}</span>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0 ml-auto">
+                    <span className="font-medium">{t.total_ttc?.toFixed(2)} €</span>
+                    <div className="flex items-center gap-2">
+                      <a href={`${api.defaults.baseURL}/caisse/${t.id}/pdf`} target="_blank" rel="noreferrer" data-testid={`history-view-${t.id}`} title="Voir">
+                        <Eye size={15} className="text-muted-foreground hover:text-foreground" />
+                      </a>
+                      <a href={`${api.defaults.baseURL}/caisse/${t.id}/pdf`} target="_blank" rel="noreferrer" data-testid={`history-pdf-${t.id}`} title="Télécharger PDF">
+                        <FileDown size={15} className="text-primary" />
+                      </a>
+                      {canManage(t) && (
+                        <button data-testid={`history-edit-${t.id}`} onClick={() => openEditTicket(t)} title="Modifier">
+                          <Pencil size={14} />
+                        </button>
+                      )}
+                      {hasPerm(user, "caisse", "delete_ticket") && (
+                        <button data-testid={`history-delete-${t.id}`} onClick={() => removeTicket(t.id)} title="Supprimer" className="text-destructive">
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

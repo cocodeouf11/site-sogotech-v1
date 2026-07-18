@@ -84,10 +84,10 @@ export default function DevisFormPage() {
 
   return (
     <Layout title="Devis">
-      <div className="a4-sheet max-w-4xl mx-auto p-8 sm:p-12 rounded-md">
+      <div className="a4-sheet max-w-4xl mx-auto p-4 sm:p-8 md:p-12 rounded-md">
         <DocumentHeader shop={shop} numero={data.numero || "(auto)"} />
         <h2 className="font-heading text-xl font-bold text-center mb-6">DEVIS</h2>
-        <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 text-sm">
           <div><span className="font-semibold">Vendeur:</span> {data.vendeur_nom || `${user.prenom} ${user.nom}`}</div>
           <div><span className="font-semibold">Date:</span> {data.date || today}</div>
           <Input data-testid="devis-client-nom" disabled={!canEdit} placeholder="Nom client" value={data.client_nom} onChange={(e) => setData({ ...data, client_nom: e.target.value })} />
@@ -100,11 +100,11 @@ export default function DevisFormPage() {
             {canEdit && <Button size="sm" variant="outline" data-testid="devis-add-item" onClick={addItem} className="gap-1"><Plus size={14} />Ligne</Button>}
           </div>
           {data.items.map((item, idx) => (
-            <div key={idx} className="grid grid-cols-12 gap-2 mb-2">
-              <Input disabled={!canEdit} data-testid={`devis-item-nom-${idx}`} className="col-span-6" placeholder="Désignation" value={item.nom} onChange={(e) => updateItem(idx, "nom", e.target.value)} />
-              <Input disabled={!canEdit} data-testid={`devis-item-qte-${idx}`} type="number" className="col-span-2" value={item.quantite} onChange={(e) => updateItem(idx, "quantite", Number(e.target.value))} />
-              <Input disabled={!canEdit} data-testid={`devis-item-prix-${idx}`} type="number" className="col-span-3" value={item.prix_unitaire} onChange={(e) => updateItem(idx, "prix_unitaire", Number(e.target.value))} />
-              {canEdit && <button data-testid={`devis-item-remove-${idx}`} onClick={() => removeItem(idx)} className="text-destructive"><Trash2 size={16} /></button>}
+            <div key={idx} className="grid grid-cols-2 sm:grid-cols-12 gap-2 mb-2 items-center">
+              <Input disabled={!canEdit} data-testid={`devis-item-nom-${idx}`} className="col-span-2 sm:col-span-6" placeholder="Désignation" value={item.nom} onChange={(e) => updateItem(idx, "nom", e.target.value)} />
+              <Input disabled={!canEdit} data-testid={`devis-item-qte-${idx}`} type="number" className="col-span-1 sm:col-span-2" value={item.quantite} onChange={(e) => updateItem(idx, "quantite", Number(e.target.value))} />
+              <Input disabled={!canEdit} data-testid={`devis-item-prix-${idx}`} type="number" className="col-span-1 sm:col-span-3" value={item.prix_unitaire} onChange={(e) => updateItem(idx, "prix_unitaire", Number(e.target.value))} />
+              {canEdit && <button data-testid={`devis-item-remove-${idx}`} onClick={() => removeItem(idx)} className="text-destructive justify-self-end sm:justify-self-auto"><Trash2 size={16} /></button>}
             </div>
           ))}
           <p className="text-right font-bold mt-2">Total: {total.toFixed(2)} €</p>
