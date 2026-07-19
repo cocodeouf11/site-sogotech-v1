@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Package, ShoppingCart, Wrench, FileText, RefreshCcw, Warehouse } from "lucide-react";
 import { Layout } from "../components/layout/Layout";
 import { api } from "../lib/api";
-import { useAuth } from "../context/AuthContext";
+import { useAuth, hasPerm } from "../context/AuthContext";
 
 function StatCard({ icon: Icon, label, value, testId }) {
   return (
@@ -21,20 +21,28 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ articles: 0, tickets: 0, interventions: 0, devis: 0, reprises: 0, depot: 0 });
 
   useEffect(() => {
+    if (!user) return;
     (async () => {
-      const [articles, tickets, interventions, devis, reprises, depot] = await Promise.all([
-        api.get("/stock"), api.get("/caisse"), api.get("/interventions"), api.get("/devis"), api.get("/reprises"), api.get("/depot/orders"),
-      ]);
+      const calls = [
+        api.get("/stock"),
+        api.get("/caisse"),
+        api.get("/interventions"),
+        api.get("/devis"),
+        api.get("/reprises"),
+        hasPerm(user, "depot") ? api.get("/depot/orders") : Promise.resolve({ data: [] }),
+      ];
+      const results = await Promise.allSettled(calls);
+      const val = (r) => (r.status === "fulfilled" ? r.value.data.length : 0);
       setStats({
-        articles: articles.data.length,
-        tickets: tickets.data.length,
-        interventions: interventions.data.length,
-        devis: devis.data.length,
-        reprises: reprises.data.length,
-        depot: depot.data.length,
+        articles: val(results[0]),
+        tickets: val(results[1]),
+        interventions: val(results[2]),
+        devis: val(results[3]),
+        reprises: val(results[4]),
+        depot: val(results[5]),
       });
     })();
-  }, []);
+  }, [user]);
 
   return (
     <Layout title={`Bonjour, ${user?.prenom || ""}`}>

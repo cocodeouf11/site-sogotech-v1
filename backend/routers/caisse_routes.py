@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
 from bson import ObjectId
 from database import db
-from auth_utils import get_current_user, has_permission
+from auth_utils import get_current_user, has_permission, effective_shop_id
+from sharing_utils import ShareRequest, share_document, document_visibility_query, annotate_share, can_access_document
 from pdf_utils import generate_facture_pdf, generate_ticket_pdf
 
 router = APIRouter(prefix="/api/caisse", tags=["caisse"])
@@ -50,8 +51,8 @@ async def next_number(prefix: str) -> str:
 
 @router.get("")
 async def list_tickets(user: dict = Depends(get_current_user)):
-    tickets = await db.tickets.find().sort("created_at", -1).to_list(2000)
-    return [serialize(t) for t in tickets]
+    tickets = await db.tickets.find(document_visibility_query(user)).sort("created_at", -1).to_list(2000)
+    return [annotate_share(serialize(t), t, user) for t in tickets]
 
 
 @router.get("/{ticket_id}")
@@ -59,11 +60,16 @@ async def get_ticket(ticket_id: str, user: dict = Depends(get_current_user)):
     ticket = await db.tickets.find_one({"_id": ObjectId(ticket_id)})
     if not ticket:
         raise HTTPException(status_code=404, detail="Introuvable")
-    return serialize(ticket)
+    if not can_access_document(user, ticket):
+        raise HTTPException(status_code=403, detail="Accès restreint à cette boutique")
+    return annotate_share(serialize(ticket), ticket, user)
 
 
 @router.post("")
 async def create_ticket(payload: TicketCreate, user: dict = Depends(get_current_user)):
+    eff = effective_shop_id(user)
+    if not eff:
+        raise HTTPException(status_code=400, detail="Veuillez sélectionner une boutique de travail")
     prefix = "FAC" if payload.type == "facture" else "TIK"
     numero = await next_number(prefix)
     items = [i.model_dump() for i in payload.items]
@@ -72,7 +78,7 @@ async def create_ticket(payload: TicketCreate, user: dict = Depends(get_current_
     doc = {
         "type": payload.type,
         "numero": numero,
-        "shop_id": payload.shop_id,
+        "shop_id": eff,
         "vendeur_id": user["_id"],
         "vendeur_nom": f"{user.get('prenom','')} {user.get('nom','')}",
         "date": datetime.now(timezone.utc).strftime("%d/%m/%Y"),
@@ -95,7 +101,12 @@ async def create_ticket(payload: TicketCreate, user: dict = Depends(get_current_
 
 
 def can_manage_ticket(user: dict, ticket: dict) -> bool:
-    return has_permission(user, "caisse", "delete_ticket") or ticket.get("vendeur_id") == user["_id"]
+    access = can_access_document(user, ticket)
+    if not access:
+        return False
+    if access["owner"]:
+        return has_permission(user, "caisse", "delete_ticket") or ticket.get("vendeur_id") == user["_id"]
+    return access["mode"] == "write"
 
 
 @router.patch("/{ticket_id}")
@@ -127,10 +138,17 @@ async def delete_ticket(ticket_id: str, user: dict = Depends(get_current_user)):
     ticket = await db.tickets.find_one({"_id": ObjectId(ticket_id)})
     if not ticket:
         raise HTTPException(status_code=404, detail="Introuvable")
+    if ticket.get("shop_id") != effective_shop_id(user):
+        raise HTTPException(status_code=403, detail="Accès restreint à cette boutique")
     if not has_permission(user, "caisse", "delete_ticket"):
         raise HTTPException(status_code=403, detail="Permission refusée")
     await db.tickets.delete_one({"_id": ObjectId(ticket_id)})
     return {"success": True}
+
+
+@router.post("/{ticket_id}/share")
+async def share_ticket(ticket_id: str, payload: ShareRequest, user: dict = Depends(get_current_user)):
+    return await share_document(db.tickets, ticket_id, payload, user, has_permission(user, "partage_document", "share"))
 
 
 @router.get("/{ticket_id}/pdf")
@@ -138,6 +156,8 @@ async def ticket_pdf(ticket_id: str, user: dict = Depends(get_current_user)):
     ticket = await db.tickets.find_one({"_id": ObjectId(ticket_id)})
     if not ticket:
         raise HTTPException(status_code=404, detail="Introuvable")
+    if not can_access_document(user, ticket):
+        raise HTTPException(status_code=403, detail="Accès restreint à cette boutique")
     shop = await db.shops.find_one({"_id": ObjectId(ticket["shop_id"])}) or {}
     if ticket["type"] == "facture":
         pdf_bytes = generate_facture_pdf(ticket, shop)

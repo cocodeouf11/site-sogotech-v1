@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, Request
 from pydantic import BaseModel
 from bson import ObjectId
 from database import db
-from auth_utils import verify_pin, create_access_token, get_current_user, hash_pin
+from auth_utils import verify_pin, create_access_token, get_current_user, hash_pin, enrich_user
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -14,7 +14,7 @@ class LoginRequest(BaseModel):
 
 
 def serialize_user(user: dict) -> dict:
-    user = dict(user)
+    user = enrich_user(user)
     user["id"] = str(user["_id"])
     user.pop("_id", None)
     user.pop("pin_hash", None)

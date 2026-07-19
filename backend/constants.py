@@ -21,6 +21,8 @@ DEFAULT_PERMISSIONS = {
     "stock": {"add": False, "edit": False, "edit_quantity": False, "delete": False},
     "communication": True,
     "depot": False,
+    "inter_boutique": False,
+    "partage_document": False,
 }
 
 GRADE_PERMISSION_TEMPLATES = {

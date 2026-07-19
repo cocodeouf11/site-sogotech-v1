@@ -5,7 +5,8 @@ import { useAuth, hasPerm } from "../../context/AuthContext";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../components/ui/dialog";
-import { Trash2, Plus, Minus, Printer, FileDown, Search, Package, Pencil, Eye } from "lucide-react";
+import { ShareDialog } from "../../components/ShareDialog";
+import { Trash2, Plus, Minus, Printer, FileDown, Search, Package, Pencil, Eye, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function CaissePage() {
@@ -22,6 +23,7 @@ export default function CaissePage() {
   const [clientInfo, setClientInfo] = useState({ nom: "", adresse: "", email: "", siret: "" });
   const [editTicket, setEditTicket] = useState(null);
   const [editForm, setEditForm] = useState({ tva_percent: 20, client_info: { nom: "", adresse: "", email: "", siret: "" } });
+  const [shareItem, setShareItem] = useState(null);
 
   const load = async () => {
     const [a, t] = await Promise.all([api.get("/stock"), api.get("/caisse")]);
@@ -66,7 +68,7 @@ export default function CaissePage() {
   const tvaAmount = (ht * tva) / 100;
   const ttc = ht + tvaAmount;
 
-  const shopId = user?.shop_id;
+  const shopId = user?.effective_shop_id;
 
   const validate = async () => {
     if (cart.length === 0) return;
@@ -87,7 +89,7 @@ export default function CaissePage() {
     }
   };
 
-  const canManage = (t) => user.is_admin || hasPerm(user, "caisse", "delete_ticket") || t.vendeur_id === user.id;
+  const canManage = (t) => user.is_admin || hasPerm(user, "caisse", "delete_ticket") || t.vendeur_id === user.id || (t.is_shared_to_me && t.share_mode === "write");
 
   const openEditTicket = (t) => {
     setEditTicket(t);
@@ -166,6 +168,11 @@ export default function CaissePage() {
                   <div className="min-w-0">
                     <span data-testid={`history-numero-${t.id}`} className="block truncate">{t.numero} — {t.type}</span>
                     <span className="text-xs text-muted-foreground truncate block">{t.vendeur_nom}</span>
+                    {t.is_shared_to_me && (
+                      <span className="text-xs text-muted-foreground truncate block" data-testid={`history-shared-badge-${t.id}`}>
+                        Partagé par {t.shared_by_label} ({t.share_mode === "write" ? "écriture" : "lecture"})
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 shrink-0 ml-auto">
                     <span className="font-medium">{t.total_ttc?.toFixed(2)} €</span>
@@ -181,7 +188,12 @@ export default function CaissePage() {
                           <Pencil size={14} />
                         </button>
                       )}
-                      {hasPerm(user, "caisse", "delete_ticket") && (
+                      {hasPerm(user, "partage_document") && !t.is_shared_to_me && (
+                        <button data-testid={`history-share-${t.id}`} onClick={() => setShareItem(t.id)} title="Partager">
+                          <Share2 size={14} />
+                        </button>
+                      )}
+                      {hasPerm(user, "caisse", "delete_ticket") && !t.is_shared_to_me && (
                         <button data-testid={`history-delete-${t.id}`} onClick={() => removeTicket(t.id)} title="Supprimer" className="text-destructive">
                           <Trash2 size={14} />
                         </button>
@@ -261,6 +273,7 @@ export default function CaissePage() {
           <DialogFooter><Button data-testid="ticket-edit-save" onClick={saveEditTicket}>Enregistrer</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+      <ShareDialog open={!!shareItem} onOpenChange={(v) => !v && setShareItem(null)} module="caisse" itemId={shareItem} onShared={load} />
     </Layout>
   );
 }

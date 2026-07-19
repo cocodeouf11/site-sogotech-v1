@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from bson import ObjectId
 from database import db
-from auth_utils import get_current_user, has_permission
+from auth_utils import get_current_user, has_permission, effective_shop_id
 
 router = APIRouter(prefix="/api/stock", tags=["stock"])
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -40,7 +40,10 @@ def serialize(a: dict) -> dict:
 
 @router.get("")
 async def list_articles(user: dict = Depends(get_current_user)):
-    articles = await db.articles.find().sort("nom", 1).to_list(5000)
+    eff = effective_shop_id(user)
+    if not eff:
+        return []
+    articles = await db.articles.find({"shop_id": eff}).sort("nom", 1).to_list(5000)
     return [serialize(a) for a in articles]
 
 
@@ -55,7 +58,11 @@ async def next_article_code() -> str:
 async def create_article(payload: ArticleCreate, user: dict = Depends(get_current_user)):
     if not has_permission(user, "stock", "add"):
         raise HTTPException(status_code=403, detail="Permission refusée")
+    eff = effective_shop_id(user)
+    if not eff:
+        raise HTTPException(status_code=400, detail="Veuillez sélectionner une boutique de travail")
     doc = payload.model_dump()
+    doc["shop_id"] = eff
     code = (doc.get("code") or "").strip()
     if code:
         existing = await db.articles.find_one({"code": code})
@@ -73,6 +80,11 @@ async def create_article(payload: ArticleCreate, user: dict = Depends(get_curren
 
 @router.patch("/{article_id}")
 async def update_article(article_id: str, payload: ArticleUpdate, user: dict = Depends(get_current_user)):
+    article = await db.articles.find_one({"_id": ObjectId(article_id)})
+    if not article:
+        raise HTTPException(status_code=404, detail="Article introuvable")
+    if article.get("shop_id") != effective_shop_id(user):
+        raise HTTPException(status_code=403, detail="Accès restreint à cette boutique")
     update_data = payload.model_dump(exclude_unset=True)
     only_quantity = set(update_data.keys()) <= {"quantite"}
     if only_quantity:
@@ -100,6 +112,11 @@ async def update_article(article_id: str, payload: ArticleUpdate, user: dict = D
 
 @router.delete("/{article_id}")
 async def delete_article(article_id: str, user: dict = Depends(get_current_user)):
+    article = await db.articles.find_one({"_id": ObjectId(article_id)})
+    if not article:
+        raise HTTPException(status_code=404, detail="Article introuvable")
+    if article.get("shop_id") != effective_shop_id(user):
+        raise HTTPException(status_code=403, detail="Accès restreint à cette boutique")
     if not has_permission(user, "stock", "delete"):
         raise HTTPException(status_code=403, detail="Permission refusée")
     await db.articles.delete_one({"_id": ObjectId(article_id)})
@@ -108,6 +125,11 @@ async def delete_article(article_id: str, user: dict = Depends(get_current_user)
 
 @router.post("/{article_id}/photo")
 async def upload_photo(article_id: str, file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    article = await db.articles.find_one({"_id": ObjectId(article_id)})
+    if not article:
+        raise HTTPException(status_code=404, detail="Article introuvable")
+    if article.get("shop_id") != effective_shop_id(user):
+        raise HTTPException(status_code=403, detail="Accès restreint à cette boutique")
     if not (has_permission(user, "stock", "edit") or has_permission(user, "stock", "add")):
         raise HTTPException(status_code=403, detail="Permission refusée")
     os.makedirs(os.path.join(UPLOAD_DIR, "articles"), exist_ok=True)

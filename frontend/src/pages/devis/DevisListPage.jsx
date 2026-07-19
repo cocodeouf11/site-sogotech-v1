@@ -5,13 +5,15 @@ import { api, formatApiError } from "../../lib/api";
 import { useAuth, hasPerm } from "../../context/AuthContext";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { Plus, Lock, FileDown, Trash2, Search } from "lucide-react";
+import { ShareDialog } from "../../components/ShareDialog";
+import { Plus, Lock, FileDown, Trash2, Search, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function DevisListPage() {
   const { user } = useAuth();
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState("");
+  const [shareItem, setShareItem] = useState(null);
 
   const load = () => api.get("/devis").then((r) => setItems(r.data));
   useEffect(() => { load(); }, []);
@@ -53,7 +55,14 @@ export default function DevisListPage() {
           <tbody>
             {filtered.map((it) => (
               <tr key={it.id} className="border-t border-border" data-testid={`devis-row-${it.id}`}>
-                <td className="p-3">{it.numero}</td>
+                <td className="p-3">
+                  {it.numero}
+                  {it.is_shared_to_me && (
+                    <span className="block text-xs text-muted-foreground" data-testid={`devis-shared-badge-${it.id}`}>
+                      Partagé par {it.shared_by_label} ({it.share_mode === "write" ? "écriture" : "lecture"})
+                    </span>
+                  )}
+                </td>
                 <td className="p-3">{it.date}</td>
                 <td className="p-3">{it.client_nom}</td>
                 <td className="p-3">{it.status}</td>
@@ -64,7 +73,10 @@ export default function DevisListPage() {
                         {hasPerm(user, "devis", "edit") ? "Modifier" : "Voir"}
                       </Link>
                       <a href={`${api.defaults.baseURL}/devis/${it.id}/pdf`} target="_blank" rel="noreferrer" data-testid={`devis-pdf-${it.id}`} title="PDF"><FileDown size={15} /></a>
-                      {hasPerm(user, "devis", "delete") && (
+                      {hasPerm(user, "partage_document") && !it.is_shared_to_me && (
+                        <button data-testid={`devis-share-${it.id}`} onClick={() => setShareItem(it.id)} title="Partager"><Share2 size={15} /></button>
+                      )}
+                      {hasPerm(user, "devis", "delete") && !it.is_shared_to_me && (
                         <button data-testid={`devis-delete-${it.id}`} onClick={() => remove(it.id)} title="Supprimer" className="text-destructive"><Trash2 size={15} /></button>
                       )}
                     </div>
@@ -77,6 +89,7 @@ export default function DevisListPage() {
           </tbody>
         </table>
       </div>
+      <ShareDialog open={!!shareItem} onOpenChange={(v) => !v && setShareItem(null)} module="devis" itemId={shareItem} onShared={load} />
     </Layout>
   );
 }

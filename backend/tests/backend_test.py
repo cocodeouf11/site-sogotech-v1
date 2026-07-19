@@ -319,23 +319,37 @@ class TestIntervention:
             assert "can_open" in items[0]
 
     def test_vendeur_isolation(self, admin_session, vendeur_session, second_shop):
-        # Create intervention in second_shop by admin
-        r = admin_session.post(f"{API}/interventions", json={
+        # NOTE: admin can't just pass shop_id=second_shop in the payload anymore -- the
+        # backend always overrides shop_id with the creator's own effective_shop_id
+        # (security fix). So we create a throwaway user actually assigned to second_shop
+        # to produce a genuine cross-shop document.
+        r_u = admin_session.post(f"{API}/users", json={
+            "nom": "TEST_SecondShopUser", "prenom": "X", "poste": "Vendeur",
+            "grades": ["Vendeur"], "shop_id": second_shop["id"], "pin": "319001",
+        })
+        assert r_u.status_code == 200, r_u.text
+        second_shop_user_id = r_u.json()["id"]
+        s2 = _client()
+        r_login = _login(s2, "319001")
+        assert r_login.status_code == 200
+        r = s2.post(f"{API}/interventions", json={
             "shop_id": second_shop["id"],
             "client_nom": "TEST_Isolated",
             "materiel": "S22",
         })
         assert r.status_code == 200
         other_id = r.json()["id"]
-        # vendeur can see it in list
+        # STRICT isolation (iteration 6): vendeur must NOT see other shop's intervention
+        # at all in the list (not even locked/can_open=False).
         rl = vendeur_session.get(f"{API}/interventions")
         assert rl.status_code == 200
         found = [x for x in rl.json() if x["id"] == other_id]
-        assert found, "vendeur should see all interventions in list"
-        assert found[0]["can_open"] is False, "vendeur should NOT be able to open other shop's intervention"
-        # detail should 403
+        assert not found, "vendeur should NOT see other shop's intervention in list at all (strict cloisonnement)"
+        # detail should still 403
         rd = vendeur_session.get(f"{API}/interventions/{other_id}")
         assert rd.status_code == 403
+        admin_session.delete(f"{API}/interventions/{other_id}")
+        admin_session.delete(f"{API}/users/{second_shop_user_id}")
 
 
 class TestDevis:

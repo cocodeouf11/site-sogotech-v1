@@ -5,13 +5,15 @@ import { api, formatApiError } from "../../lib/api";
 import { useAuth, hasPerm } from "../../context/AuthContext";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { Plus, Lock, FileDown, Pencil, Trash2, Search } from "lucide-react";
+import { ShareDialog } from "../../components/ShareDialog";
+import { Plus, Lock, FileDown, Pencil, Trash2, Search, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function InterventionListPage() {
   const { user } = useAuth();
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState("");
+  const [shareItem, setShareItem] = useState(null);
 
   const load = () => api.get("/interventions").then((r) => setItems(r.data));
   useEffect(() => { load(); }, []);
@@ -55,7 +57,14 @@ export default function InterventionListPage() {
           <tbody>
             {filtered.map((it) => (
               <tr key={it.id} className="border-t border-border" data-testid={`intervention-row-${it.id}`}>
-                <td className="p-3">{it.numero}</td>
+                <td className="p-3">
+                  {it.numero}
+                  {it.is_shared_to_me && (
+                    <span className="block text-xs text-muted-foreground" data-testid={`intervention-shared-badge-${it.id}`}>
+                      Partagé par {it.shared_by_label} ({it.share_mode === "write" ? "écriture" : "lecture"})
+                    </span>
+                  )}
+                </td>
                 <td className="p-3">{it.date}</td>
                 <td className="p-3">{it.client_nom}</td>
                 <td className="p-3">{it.vendeur_nom}</td>
@@ -66,7 +75,10 @@ export default function InterventionListPage() {
                         {hasPerm(user, "intervention", "edit") ? "Modifier" : "Voir"}
                       </Link>
                       <a href={`${api.defaults.baseURL}/interventions/${it.id}/pdf`} target="_blank" rel="noreferrer" data-testid={`intervention-pdf-${it.id}`} title="PDF"><FileDown size={15} /></a>
-                      {hasPerm(user, "intervention", "delete") && (
+                      {hasPerm(user, "partage_document") && !it.is_shared_to_me && (
+                        <button data-testid={`intervention-share-${it.id}`} onClick={() => setShareItem(it.id)} title="Partager"><Share2 size={15} /></button>
+                      )}
+                      {hasPerm(user, "intervention", "delete") && !it.is_shared_to_me && (
                         <button data-testid={`intervention-delete-${it.id}`} onClick={() => remove(it.id)} title="Supprimer" className="text-destructive"><Trash2 size={15} /></button>
                       )}
                     </div>
@@ -79,6 +91,7 @@ export default function InterventionListPage() {
           </tbody>
         </table>
       </div>
+      <ShareDialog open={!!shareItem} onOpenChange={(v) => !v && setShareItem(null)} module="interventions" itemId={shareItem} onShared={load} />
     </Layout>
   );
 }

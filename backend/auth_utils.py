@@ -64,12 +64,6 @@ def is_all_shops_manager(user: dict) -> bool:
     return "Gestionnaire toutes boutiques" in (user.get("grades") or [])
 
 
-def can_view_shop(user: dict, shop_id: str) -> bool:
-    if is_admin(user) or is_all_shops_manager(user):
-        return True
-    return user.get("shop_id") == shop_id
-
-
 def require_admin(user: dict = Depends(get_current_user)) -> dict:
     if not is_admin(user):
         raise HTTPException(status_code=403, detail="Accès réservé à l'administrateur")
@@ -84,3 +78,28 @@ def has_permission(user: dict, module: str, action: str) -> bool:
     if isinstance(module_perms, bool):
         return module_perms
     return bool(module_perms.get(action, False))
+
+
+def is_multi_shop_user(user: dict) -> bool:
+    """Admin, Gestionnaire toutes boutiques, or a user granted the 'inter_boutique'
+    permission must pick an active shop context (they don't see a merged view anymore)."""
+    if is_admin(user) or is_all_shops_manager(user):
+        return True
+    return has_permission(user, "inter_boutique", "access")
+
+
+def effective_shop_id(user: dict):
+    """The shop a user is currently allowed to read/write data for.
+    - Regular users: always their own assigned shop.
+    - Multi-shop users: the shop they explicitly selected (active_shop_id), or None
+      if they haven't picked one yet (frontend must force the selector in that case)."""
+    if is_multi_shop_user(user):
+        return user.get("active_shop_id")
+    return user.get("shop_id")
+
+
+def enrich_user(user: dict) -> dict:
+    user = dict(user)
+    user["is_multi_shop_user"] = is_multi_shop_user(user)
+    user["effective_shop_id"] = effective_shop_id(user)
+    return user

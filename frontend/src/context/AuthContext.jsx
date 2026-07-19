@@ -35,8 +35,13 @@ export function AuthProvider({ children }) {
     setUser(false);
   };
 
+  const switchShop = async (shopId) => {
+    await api.patch("/users/me/active-shop", { shop_id: shopId });
+    window.location.href = "/";
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refresh: fetchMe }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refresh: fetchMe, switchShop }}>
       {children}
     </AuthContext.Provider>
   );

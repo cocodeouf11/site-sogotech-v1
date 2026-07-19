@@ -121,6 +121,8 @@ async def seed_data():
         depot_allowed = any(GRADE_PERMISSION_TEMPLATES.get(g, {}).get("depot") for g in grades)
         await db.users.update_one({"_id": u["_id"]}, {"$set": {"permissions.depot": depot_allowed}})
 
+    await db.articles.update_many({"shop_id": {"$in": [None, ""]}}, {"$set": {"shop_id": shop_id}})
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

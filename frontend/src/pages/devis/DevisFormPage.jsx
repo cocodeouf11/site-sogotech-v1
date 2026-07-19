@@ -29,7 +29,7 @@ export default function DevisFormPage() {
   useEffect(() => {
     (async () => {
       const [shopsRes, intRes] = await Promise.all([api.get("/shops"), api.get("/interventions")]);
-      const myShop = shopsRes.data.find((s) => s.id === user.shop_id);
+      const myShop = shopsRes.data.find((s) => s.id === user.effective_shop_id);
       if (!myShop && isNew) {
         toast.error("Aucune boutique n'est assignée à votre compte. Contactez un administrateur.");
       }
@@ -60,7 +60,9 @@ export default function DevisFormPage() {
     setData({ ...data, intervention_ids: ids });
   };
 
-  const canEdit = isNew ? hasPerm(user, "devis", "create") : hasPerm(user, "devis", "edit");
+  const canEdit = data.is_shared_to_me
+    ? data.share_mode === "write"
+    : (isNew ? hasPerm(user, "devis", "create") : hasPerm(user, "devis", "edit"));
 
   const save = async () => {
     const signature_data = sigRef.current?.toDataURL() || data.signature_data || "";
@@ -86,6 +88,11 @@ export default function DevisFormPage() {
     <Layout title="Devis">
       <div className="a4-sheet max-w-4xl mx-auto p-4 sm:p-8 md:p-12 rounded-md">
         <DocumentHeader shop={shop} numero={data.numero || "(auto)"} />
+        {data.is_shared_to_me && (
+          <p className="text-xs text-center text-muted-foreground mb-4" data-testid="devis-shared-banner">
+            Document partagé par {data.shared_by_label} — {data.share_mode === "write" ? "lecture / écriture" : "lecture seule"}
+          </p>
+        )}
         <h2 className="font-heading text-xl font-bold text-center mb-6">DEVIS</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 text-sm">
           <div><span className="font-semibold">Vendeur:</span> {data.vendeur_nom || `${user.prenom} ${user.nom}`}</div>

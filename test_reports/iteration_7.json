@@ -1,0 +1,27 @@
+{
+  "summary": "RETEST CIBLE (post iteration_6 fix) - Verified the write-mode edit-gating fix across all 4 modules via live UI flows (Alice shares write -> Bob edits & saves; Alice shares read -> Bob confirmed still locked). All 4 fixes work correctly, no regressions.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "InterventionFormPage.jsx/DevisFormPage.jsx/RepriseFormPage.jsx canEdit = data.is_shared_to_me ? data.share_mode === 'write' : (own permission) -- verified live: Bob (Vendeur, no own edit perm outside his shop) could see Enregistrer button, edit fields (disabled=false), submit PATCH successfully with success toast and no 403, for all 3 modules.",
+    "CaissePage.jsx canManage now includes || (t.is_shared_to_me && t.share_mode === 'write') -- verified live: Pencil/history-edit button appeared for Bob on a write-shared ticket, edit modal opened, PATCH via ticket-edit-save succeeded with 'Document mis à jour' toast, no error.",
+    "Regression check: read-mode share (default ShareDialog mode) on Intervention correctly kept the form disabled for Bob -- intervention-save-button not rendered, int-client-nom disabled attribute present. No regression from the fix."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (skipped per scope, previously 100%)", "frontend": "100% for the targeted retest scope (4/4 modules verified working, read-mode regression confirmed intact)"},
+  "test_credentials": "Admin PIN 123456. TEST_Partageur Alice PIN 810001. TEST_Recepteur Bob PIN 810002 (sogo shop). Both accounts still present and functional.",
+  "seed_data_creation": "Created several new TEST_ prefixed documents during this session for share testing: Intervention INT-2026-0046 (write, edited by Bob), INT-2026-0047-ish read-mode test doc (TEST_ReadOnlyShareClient, shared read to Bob), a new Devis (TEST_DevisShareClient, edited by Bob), a new Reprise REP-2026-0018 (TEST_RepriseShareClient, edited by Bob), and 2 Caisse tickets (TEST_CaisseShare / TEST_CaisseShare2 prestations, one shared write TIK-2026-0034, edited by Bob). All safe to leave in DB or clean up; none affect production logic.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The write-mode edit-gating bug from iteration_6 is fully fixed and verified end-to-end (UI click -> API PATCH -> persisted toast, no 403) across Intervention, Devis, Reprise, and Caisse/Ticket. Read-mode sharing regression also confirmed intact (still fully locked). No further action needed on this specific fix. Backend was out of scope for this retest per instructions (already 100% validated in iteration_6).",
+  "rca of the issue": "N/A - this iteration is a verification pass confirming the previously reported RCA/fix (canEdit computed via is_shared_to_me ? share_mode==='write' : own-permission, and canManage adding the OR clause for shared write tickets) was implemented correctly and works as intended in production-like UI flow."
+}

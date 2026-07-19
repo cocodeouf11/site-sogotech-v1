@@ -51,7 +51,7 @@ export default function RepriseFormPage() {
   useEffect(() => {
     (async () => {
       const shopsRes = await api.get("/shops");
-      const myShop = shopsRes.data.find((s) => s.id === user.shop_id);
+      const myShop = shopsRes.data.find((s) => s.id === user.effective_shop_id);
       if (!myShop && isNew) {
         toast.error("Aucune boutique n'est assignée à votre compte. Contactez un administrateur.");
       }
@@ -64,7 +64,9 @@ export default function RepriseFormPage() {
   }, [id]);
 
   const today = new Date().toLocaleDateString("fr-FR");
-  const canEdit = isNew ? hasPerm(user, "reprise", "create") : hasPerm(user, "reprise", "edit");
+  const canEdit = data.is_shared_to_me
+    ? data.share_mode === "write"
+    : (isNew ? hasPerm(user, "reprise", "create") : hasPerm(user, "reprise", "edit"));
 
   const toggleEtat = (key) => setData({ ...data, etat_produit: { ...data.etat_produit, [key]: !data.etat_produit[key] } });
   const toggleTest = (key) => setData({ ...data, tests: { ...data.tests, [key]: !data.tests[key] } });
@@ -100,6 +102,11 @@ export default function RepriseFormPage() {
     <Layout title="Fiche de reprise téléphone">
       <div className="a4-sheet max-w-4xl mx-auto p-4 sm:p-8 md:p-12 rounded-md">
         <DocumentHeader shop={shop} numero={data.numero || "(auto)"} />
+        {data.is_shared_to_me && (
+          <p className="text-xs text-center text-muted-foreground mb-4" data-testid="reprise-shared-banner">
+            Document partagé par {data.shared_by_label} — {data.share_mode === "write" ? "lecture / écriture" : "lecture seule"}
+          </p>
+        )}
         <h2 className="font-heading text-xl font-bold text-center mb-6">FICHE DE REPRISE TÉLÉPHONE</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 text-sm">

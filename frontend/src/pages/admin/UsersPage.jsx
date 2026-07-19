@@ -194,6 +194,20 @@ export default function UsersPage() {
                   Accès à la fonction Dépôt (picking, étiquette, envoi des bons de commande)
                 </label>
               </div>
+              <div>
+                <p className="text-sm font-semibold mb-1">Inter boutique</p>
+                <label className="flex items-center gap-1.5 text-xs">
+                  <Checkbox data-testid="perm-inter_boutique" checked={!!permTarget.permissions.inter_boutique} onCheckedChange={() => setPermTarget((t) => ({ ...t, permissions: { ...t.permissions, inter_boutique: !t.permissions.inter_boutique } }))} />
+                  Peut travailler sur plusieurs boutiques (sélecteur de boutique active)
+                </label>
+              </div>
+              <div>
+                <p className="text-sm font-semibold mb-1">Partage de document</p>
+                <label className="flex items-center gap-1.5 text-xs">
+                  <Checkbox data-testid="perm-partage_document" checked={!!permTarget.permissions.partage_document} onCheckedChange={() => setPermTarget((t) => ({ ...t, permissions: { ...t.permissions, partage_document: !t.permissions.partage_document } }))} />
+                  Peut partager ses documents (ticket, facture, devis, reprise, intervention) avec un autre utilisateur
+                </label>
+              </div>
             </div>
           )}
           <DialogFooter><Button data-testid="user-perms-save" onClick={savePerms}>Enregistrer</Button></DialogFooter>

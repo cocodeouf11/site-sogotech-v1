@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from bson import ObjectId
 from datetime import datetime, timezone
 from database import db
-from auth_utils import get_current_user, require_admin, hash_pin, is_admin
+from auth_utils import get_current_user, require_admin, hash_pin, is_admin, is_multi_shop_user, enrich_user
 from constants import ALL_GRADES, GRADE_PERMISSION_TEMPLATES, DEFAULT_PERMISSIONS
 
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -34,8 +34,12 @@ class UserUpdate(BaseModel):
     permissions: Optional[dict] = None
 
 
+class ActiveShopUpdate(BaseModel):
+    shop_id: str
+
+
 def serialize(u: dict) -> dict:
-    u = dict(u)
+    u = enrich_user(u)
     u["id"] = str(u["_id"])
     u.pop("_id", None)
     u.pop("pin_hash", None)
@@ -75,6 +79,18 @@ async def get_grades(user: dict = Depends(get_current_user)):
 async def list_users(user: dict = Depends(get_current_user)):
     users = await db.users.find().sort("nom", 1).to_list(1000)
     return [serialize(u) for u in users]
+
+
+@router.patch("/me/active-shop")
+async def set_active_shop(payload: ActiveShopUpdate, user: dict = Depends(get_current_user)):
+    if not is_multi_shop_user(user):
+        raise HTTPException(status_code=403, detail="Fonction réservée aux comptes multi-boutiques")
+    shop = await db.shops.find_one({"_id": ObjectId(payload.shop_id), "type": "boutique"})
+    if not shop:
+        raise HTTPException(status_code=404, detail="Boutique introuvable")
+    await db.users.update_one({"_id": ObjectId(user["_id"])}, {"$set": {"active_shop_id": payload.shop_id}})
+    updated = await db.users.find_one({"_id": ObjectId(user["_id"])})
+    return serialize(updated)
 
 
 @router.post("")

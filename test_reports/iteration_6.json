@@ -1,0 +1,54 @@
+{
+  "summary": "Tested 3 iteration-6 features: Dashboard crash fix, strict shop-based data isolation + inter_boutique multi-shop selector/switcher, and partage_document sharing. Backend logic for all 3 features is CORRECT and fully verified (21/21 new pytest cases + 34/34 old regression tests passing after fixing 2 outdated tests that asserted the OLD non-strict isolation behavior). UI verified for: dashboard no-crash, blocking shop-selector-modal on first login (lists only 'boutique' type shops, excludes Dépôt), shop-switcher-button/menu switching data live, new perm-inter_boutique/perm-partage_document checkboxes saving correctly, and the full Share dialog flow (select user, mode, submit) with toast confirmation. HOWEVER found one CRITICAL frontend bug: the 'write' share mode does not actually grant edit rights in the UI on Intervention/Devis/Reprise/Caisse -- the recipient sees the shared banner and badge correctly, but the form stays fully read-only (no Save/Edit button) because canEdit/canManage logic in the 4 form/list pages ANDs share_mode check with the recipient's OWN base module permission instead of using share_mode==='write' as an override, contradicting the backend (which correctly allows PATCH via can_access_document when mode='write' regardless of the recipient's own permission).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "InterventionFormPage.jsx / DevisFormPage.jsx / RepriseFormPage.jsx",
+        "issue": "canEdit = (hasPerm(user, module, isNew?'create':'edit')) && data.share_mode !== 'read'. This ANDs with the recipient's OWN module edit permission, so a user shared a document in 'write' mode who lacks the module's own 'edit' permission (e.g. a Vendeur, whose grade template has edit:false) sees a fully disabled form with NO Save button -- contradicting spec 'le destinataire ... PEUT la modifier (bouton Enregistrer visible)' for write mode. Backend correctly allows the PATCH in this scenario (can_access_document / access['mode']=='write' bypasses the owner's has_permission check), so this is purely a frontend gating bug. Reproduced live via UI: shared write-mode Intervention showed 'Document partagé ... lecture / écriture' banner but every input was disabled and no Enregistrer button rendered.",
+        "selector": "intervention-save-button / devis-save-button / reprise-save-button (all missing when share_mode==='write' but recipient lacks own edit perm)",
+        "priority": "HIGH"
+      },
+      {
+        "component": "CaissePage.jsx",
+        "issue": "canManage(t) = user.is_admin || hasPerm(user,'caisse','delete_ticket') || t.vendeur_id===user.id -- does not check t.share_mode==='write' at all, so the Pencil/'Modifier' button never appears for a recipient of a write-mode shared ticket even though backend would allow the PATCH.",
+        "selector": "history-edit-{id}",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration6.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/iteration6.xml",
+    "/app/test_reports/pytest/full_regression.xml"
+  ],
+  "action_items": [
+    "Fix canEdit in InterventionFormPage.jsx, DevisFormPage.jsx, RepriseFormPage.jsx: when data.is_shared_to_me is true, canEdit should be simply (data.share_mode === 'write'), independent of the recipient's own module permission. Keep the existing own-permission check only for non-shared (owned) documents.",
+    "Fix canManage in CaissePage.jsx to also return true when t.is_shared_to_me && t.share_mode === 'write', so the edit (Pencil) button appears and openEditTicket works for write-shared tickets.",
+    "After fixing, re-verify: recipient with write-mode share can actually submit the PATCH and see the update persisted; read-mode share still stays fully disabled (already confirmed working)."
+  ],
+  "critical_code_review_comments": [
+    "auth_utils.py / sharing_utils.py: effective_shop_id, is_multi_shop_user, can_access_document, document_visibility_query are all clean, correctly composed, and the ALWAYS-override-shop_id-server-side security rule is correctly enforced across stock/caisse/intervention/devis/reprise create endpoints (verified with an explicit injection test: client-sent shop_id from a different shop is ignored).",
+    "document_visibility_query correctly restricts list endpoints to {shop_id: effective_shop_id} OR {shared_with.user_id: me} -- true strict cloisonnement confirmed (previously the intervention list leaked other-shop items with can_open=false; this is now fixed and old regression test updated to match).",
+    "users_routes.set_active_shop correctly 404s when the target shop isn't type='boutique' (blocks selecting the Dépôt as active shop) and 403s for non-multi-shop users.",
+    "Backend consistently checks has_permission(user,'partage_document') as a plain boolean permission (DEFAULT_PERMISSIONS declares it as bool, not dict) -- has_permission's isinstance(bool) branch correctly returns it regardless of the action arg passed ('share'), so this works as intended despite looking mismatched at first glance.",
+    "Minor nit: UsersPage.jsx MODULES array is still hardcoded (['reprise','devis','intervention','stock']) with caisse/communication/depot/inter_boutique/partage_document appended as separate one-off blocks -- functionally fine and correctly wired, but getting repetitive; no action required now."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py (fixed TestIntervention::test_vendeur_isolation to match new strict cloisonnement + fixed a shop_id-override test artifact by creating a real second-shop user instead of relying on admin's own effective shop)",
+    "/app/backend/tests/test_iteration6.py (new)"
+  ],
+  "success_rate": {"backend": "100% (55/55 pytest cases across backend_test.py, test_iteration3.py, test_iteration6.py)", "frontend": "~85% (all flows work except the write-mode edit-gating bug found in 4 modules)"},
+  "test_credentials": "Admin PIN 123456 (existing, unchanged). New persistent test users created via API for further use: TEST_Partageur Alice (Vendeur, Boutique Centrale, PIN 810001, permissions.partage_document=true), TEST_Recepteur Bob (Vendeur, sogo shop, PIN 810002). Ephemeral pytest-created users (PINs 710001-710005, 319001) are auto-cleaned up by fixture teardown.",
+  "seed_data_creation": "Created 2 persistent test users (Alice PIN 810001 partage_document=true in Boutique Centrale, Bob PIN 810002 in sogo) plus one demo shared Intervention (INT-2026-0045, client TEST_ShareUIClient) shared write-mode from Alice to Bob -- left in DB intentionally as a live demo of the sharing feature; safe to delete. Also inadvertently toggled inter_boutique+partage_document ON for the Super Admin user while testing the Users>Permissions UI (harmless since admin bypasses all permission checks via is_admin, but noted for cleanliness). Also reset admin's active_shop_id to null via direct DB write to test the first-login blocking modal (admin then re-selected 'Boutique Centrale' and later switched to 'sogo' via the switcher during testing, so admin's active_shop_id is now 'sogo' shop_id at end of session).",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend for iteration 6 (dashboard fix, strict cloisonnement, inter_boutique, partage_document) is 100% solid -- do not re-test backend logic unless main agent touches sharing_utils.py/auth_utils.py again. The ONLY remaining defect is the frontend write-mode edit gating bug described above, present identically in InterventionFormPage.jsx, DevisFormPage.jsx, RepriseFormPage.jsx (canEdit computation) and CaissePage.jsx (canManage computation). Once main agent fixes these 4 files, retest by: login as TEST_Partageur (PIN 810001), share any doc in write mode with TEST_Recepteur (PIN 810002, different shop 'sogo'), login as Bob and confirm the Save/Modifier button appears and a PATCH actually persists. Read-mode sharing (form stays disabled) already confirmed correct via backend tests and does not need UI re-verification unless code changes affect it.",
+  "rca of the issue": "Root cause: frontend canEdit/canManage helpers were written to gate editing purely on the current user's OWN role-based module permission (hasPerm(user, module, 'edit')) with an extra guard for share_mode==='read', instead of branching on ownership vs shared access the same way the backend does (owner => check own permission; shared => check share mode only). This means any recipient whose own grade lacks the module's 'edit' permission (e.g. Vendeur) can never edit a write-shared document through the UI, even though the backend would accept the PATCH. Fix: compute canEdit as `data.is_shared_to_me ? data.share_mode === 'write' : (own permission check)`."
+}

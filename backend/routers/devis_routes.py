@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
 from bson import ObjectId
 from database import db
-from auth_utils import get_current_user, has_permission, can_view_shop
+from auth_utils import get_current_user, has_permission, effective_shop_id
+from sharing_utils import ShareRequest, share_document, document_visibility_query, annotate_share, can_access_document
 from pdf_utils import generate_devis_pdf
 
 router = APIRouter(prefix="/api/devis", tags=["devis"])
@@ -62,13 +63,8 @@ async def next_number(prefix: str) -> str:
 
 @router.get("")
 async def list_devis(user: dict = Depends(get_current_user)):
-    items = await db.devis.find().sort("created_at", -1).to_list(2000)
-    out = []
-    for i in items:
-        s = serialize(i)
-        s["can_open"] = can_view_shop(user, i.get("shop_id"))
-        out.append(s)
-    return out
+    items = await db.devis.find(document_visibility_query(user)).sort("created_at", -1).to_list(2000)
+    return [annotate_share(serialize(i), i, user) for i in items]
 
 
 @router.get("/{item_id}")
@@ -76,18 +72,22 @@ async def get_devis(item_id: str, user: dict = Depends(get_current_user)):
     item = await db.devis.find_one({"_id": ObjectId(item_id)})
     if not item:
         raise HTTPException(status_code=404, detail="Introuvable")
-    if not can_view_shop(user, item.get("shop_id")):
+    if not can_access_document(user, item):
         raise HTTPException(status_code=403, detail="Accès restreint à cette boutique")
-    return serialize(item)
+    return annotate_share(serialize(item), item, user)
 
 
 @router.post("")
 async def create_devis(payload: DevisCreate, user: dict = Depends(get_current_user)):
     if not has_permission(user, "devis", "create"):
         raise HTTPException(status_code=403, detail="Permission refusée")
+    eff = effective_shop_id(user)
+    if not eff:
+        raise HTTPException(status_code=400, detail="Veuillez sélectionner une boutique de travail")
     numero = await next_number("DEV")
     doc = payload.model_dump()
     doc["items"] = [i for i in doc["items"]]
+    doc["shop_id"] = eff
     doc["numero"] = numero
     doc["vendeur_id"] = user["_id"]
     doc["vendeur_nom"] = f"{user.get('prenom','')} {user.get('nom','')}"
@@ -101,8 +101,17 @@ async def create_devis(payload: DevisCreate, user: dict = Depends(get_current_us
 
 @router.patch("/{item_id}")
 async def update_devis(item_id: str, payload: DevisUpdate, user: dict = Depends(get_current_user)):
-    if not has_permission(user, "devis", "edit"):
-        raise HTTPException(status_code=403, detail="Permission refusée")
+    item = await db.devis.find_one({"_id": ObjectId(item_id)})
+    if not item:
+        raise HTTPException(status_code=404, detail="Introuvable")
+    access = can_access_document(user, item)
+    if not access:
+        raise HTTPException(status_code=403, detail="Accès restreint à cette boutique")
+    if access["owner"]:
+        if not has_permission(user, "devis", "edit"):
+            raise HTTPException(status_code=403, detail="Permission refusée")
+    elif access["mode"] != "write":
+        raise HTTPException(status_code=403, detail="Document partagé en lecture seule")
     update_data = payload.model_dump(exclude_unset=True)
     if update_data:
         await db.devis.update_one({"_id": ObjectId(item_id)}, {"$set": update_data})
@@ -114,10 +123,20 @@ async def update_devis(item_id: str, payload: DevisUpdate, user: dict = Depends(
 
 @router.delete("/{item_id}")
 async def delete_devis(item_id: str, user: dict = Depends(get_current_user)):
+    item = await db.devis.find_one({"_id": ObjectId(item_id)})
+    if not item:
+        raise HTTPException(status_code=404, detail="Introuvable")
+    if item.get("shop_id") != effective_shop_id(user):
+        raise HTTPException(status_code=403, detail="Accès restreint à cette boutique")
     if not has_permission(user, "devis", "delete"):
         raise HTTPException(status_code=403, detail="Permission refusée")
     await db.devis.delete_one({"_id": ObjectId(item_id)})
     return {"success": True}
+
+
+@router.post("/{item_id}/share")
+async def share_devis(item_id: str, payload: ShareRequest, user: dict = Depends(get_current_user)):
+    return await share_document(db.devis, item_id, payload, user, has_permission(user, "partage_document", "share"))
 
 
 @router.get("/{item_id}/pdf")
@@ -125,6 +144,8 @@ async def devis_pdf(item_id: str, user: dict = Depends(get_current_user)):
     item = await db.devis.find_one({"_id": ObjectId(item_id)})
     if not item:
         raise HTTPException(status_code=404, detail="Introuvable")
+    if not can_access_document(user, item):
+        raise HTTPException(status_code=403, detail="Accès restreint à cette boutique")
     shop = await db.shops.find_one({"_id": ObjectId(item["shop_id"])}) or {}
     pdf_bytes = generate_devis_pdf(item, shop)
     return Response(content=pdf_bytes, media_type="application/pdf", headers={
