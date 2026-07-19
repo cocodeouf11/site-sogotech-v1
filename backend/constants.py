@@ -20,6 +20,7 @@ DEFAULT_PERMISSIONS = {
     "intervention": {"create": False, "edit": False, "view": True, "delete": False},
     "stock": {"add": False, "edit": False, "edit_quantity": False, "delete": False},
     "communication": True,
+    "depot": False,
 }
 
 GRADE_PERMISSION_TEMPLATES = {
@@ -30,6 +31,7 @@ GRADE_PERMISSION_TEMPLATES = {
         "intervention": {"create": True, "edit": True, "view": True, "delete": True},
         "stock": {"add": True, "edit": True, "edit_quantity": True, "delete": True},
         "communication": True,
+        "depot": True,
     },
     "Gestionnaire de boutique": {
         "reprise": {"create": True, "edit": True, "view": True, "delete": True},
@@ -38,6 +40,7 @@ GRADE_PERMISSION_TEMPLATES = {
         "intervention": {"create": True, "edit": True, "view": True, "delete": True},
         "stock": {"add": True, "edit": True, "edit_quantity": True, "delete": True},
         "communication": True,
+        "depot": False,
     },
     "Responsable de boutique": {
         "reprise": {"create": True, "edit": True, "view": True, "delete": False},
@@ -46,6 +49,7 @@ GRADE_PERMISSION_TEMPLATES = {
         "intervention": {"create": True, "edit": True, "view": True, "delete": False},
         "stock": {"add": True, "edit": True, "edit_quantity": True, "delete": False},
         "communication": True,
+        "depot": False,
     },
     "Technicien": {
         "reprise": {"create": True, "edit": True, "view": True, "delete": False},
@@ -54,6 +58,7 @@ GRADE_PERMISSION_TEMPLATES = {
         "intervention": {"create": True, "edit": True, "view": True, "delete": False},
         "stock": {"add": False, "edit": False, "edit_quantity": True, "delete": False},
         "communication": True,
+        "depot": False,
     },
     "Vendeur": {
         "reprise": {"create": True, "edit": False, "view": True, "delete": False},
@@ -62,6 +67,7 @@ GRADE_PERMISSION_TEMPLATES = {
         "intervention": {"create": True, "edit": False, "view": True, "delete": False},
         "stock": {"add": False, "edit": False, "edit_quantity": False, "delete": False},
         "communication": True,
+        "depot": False,
     },
     "Chef de dépôt": {
         "reprise": {"create": False, "edit": False, "view": False, "delete": False},
@@ -70,6 +76,7 @@ GRADE_PERMISSION_TEMPLATES = {
         "intervention": {"create": True, "edit": True, "view": True, "delete": True},
         "stock": {"add": True, "edit": True, "edit_quantity": True, "delete": True},
         "communication": True,
+        "depot": True,
     },
     "Magasinier": {
         "reprise": {"create": False, "edit": False, "view": False, "delete": False},
@@ -78,5 +85,6 @@ GRADE_PERMISSION_TEMPLATES = {
         "intervention": {"create": True, "edit": False, "view": True, "delete": False},
         "stock": {"add": False, "edit": False, "edit_quantity": True, "delete": False},
         "communication": True,
+        "depot": True,
     },
 }

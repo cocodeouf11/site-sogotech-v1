@@ -19,6 +19,8 @@ import HelpTicketsPage from "@/pages/communication/HelpTicketsPage";
 import DepotOrdersPage from "@/pages/depot/DepotOrdersPage";
 import DepotOrderDetailPage from "@/pages/depot/DepotOrderDetailPage";
 import DepotLabelPage from "@/pages/depot/DepotLabelPage";
+import CommandeListPage from "@/pages/commande/CommandeListPage";
+import CommandeDetailPage from "@/pages/commande/CommandeDetailPage";
 import UsersPage from "@/pages/admin/UsersPage";
 import ShopSettingsPage from "@/pages/admin/ShopSettingsPage";
 
@@ -42,9 +44,11 @@ function App() {
               <Route path="/reprises/:id" element={<ProtectedRoute><RepriseFormPage /></ProtectedRoute>} />
               <Route path="/communication" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
               <Route path="/communication/tickets" element={<ProtectedRoute><HelpTicketsPage /></ProtectedRoute>} />
-              <Route path="/depot" element={<ProtectedRoute><DepotOrdersPage /></ProtectedRoute>} />
-              <Route path="/depot/etiquette" element={<ProtectedRoute><DepotLabelPage /></ProtectedRoute>} />
-              <Route path="/depot/:id" element={<ProtectedRoute><DepotOrderDetailPage /></ProtectedRoute>} />
+              <Route path="/depot" element={<ProtectedRoute requirePermission="depot"><DepotOrdersPage /></ProtectedRoute>} />
+              <Route path="/depot/etiquette" element={<ProtectedRoute requirePermission="depot"><DepotLabelPage /></ProtectedRoute>} />
+              <Route path="/depot/:id" element={<ProtectedRoute requirePermission="depot"><DepotOrderDetailPage /></ProtectedRoute>} />
+              <Route path="/commandes" element={<ProtectedRoute><CommandeListPage /></ProtectedRoute>} />
+              <Route path="/commandes/:id" element={<ProtectedRoute><CommandeDetailPage /></ProtectedRoute>} />
               <Route path="/admin/users" element={<ProtectedRoute adminOnly><UsersPage /></ProtectedRoute>} />
               <Route path="/admin/shops" element={<ProtectedRoute adminOnly><ShopSettingsPage /></ProtectedRoute>} />
             </Routes>

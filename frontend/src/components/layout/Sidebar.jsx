@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard, Package, ShoppingCart, Wrench, FileText, RefreshCcw,
-  MessageSquare, Warehouse, Users, Store, LogOut, X,
+  MessageSquare, Warehouse, Users, Store, LogOut, X, Truck,
 } from "lucide-react";
 import { useAuth, hasPerm } from "../../context/AuthContext";
 
@@ -21,7 +21,8 @@ export function Sidebar({ open, onClose }) {
     { to: "/interventions", label: "Interventions", icon: Wrench, show: hasPerm(user, "intervention", "view") },
     { to: "/devis", label: "Devis", icon: FileText, show: hasPerm(user, "devis", "view") },
     { to: "/reprises", label: "Reprises", icon: RefreshCcw, show: hasPerm(user, "reprise", "view") },
-    { to: "/depot", label: "Dépôt", icon: Warehouse, show: true },
+    { to: "/commandes", label: "Commande", icon: Truck, show: true },
+    { to: "/depot", label: "Dépôt", icon: Warehouse, show: hasPerm(user, "depot") },
     { to: "/communication", label: "Messagerie", icon: MessageSquare, show: hasPerm(user, "communication") },
     { to: "/admin/users", label: "Utilisateurs", icon: Users, show: user.is_admin },
     { to: "/admin/shops", label: "Boutiques", icon: Store, show: user.is_admin },

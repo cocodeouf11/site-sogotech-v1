@@ -4,7 +4,9 @@ import { Layout } from "../../components/layout/Layout";
 import { api, formatApiError } from "../../lib/api";
 import { Button } from "../../components/ui/button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../../components/ui/dropdown-menu";
-import { ArrowLeft, FileText, Tag, Trash2, MoreVertical } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../components/ui/dialog";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../../components/ui/select";
+import { ArrowLeft, FileText, Tag, Trash2, MoreVertical, Send } from "lucide-react";
 import { toast } from "sonner";
 
 function totals(order) {
@@ -33,12 +35,16 @@ export default function DepotOrderDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
+  const [shops, setShops] = useState([]);
+  const [sendOpen, setSendOpen] = useState(false);
+  const [targetShop, setTargetShop] = useState("");
 
   const load = async () => {
     const { data } = await api.get(`/depot/orders/${id}`);
     setOrder(data);
   };
   useEffect(() => { load(); }, [id]);
+  useEffect(() => { api.get("/shops").then((r) => setShops(r.data.filter((s) => s.type === "boutique"))); }, []);
 
   const tap = async (lineId) => {
     await api.post(`/depot/orders/${id}/lines/${lineId}/tap`);
@@ -50,6 +56,20 @@ export default function DepotOrderDetailPage() {
       await api.delete(`/depot/orders/${id}`);
       toast.success("Commande supprimée");
       navigate("/depot");
+    } catch (e) {
+      toast.error(formatApiError(e.response?.data?.detail));
+    }
+  };
+
+  const sendToShop = async () => {
+    if (!targetShop) {
+      toast.error("Sélectionnez une boutique destinataire");
+      return;
+    }
+    try {
+      await api.post(`/depot/orders/${id}/send`, { shop_id: targetShop });
+      toast.success("Bon de livraison envoyé à la boutique");
+      setSendOpen(false);
     } catch (e) {
       toast.error(formatApiError(e.response?.data?.detail));
     }
@@ -87,6 +107,9 @@ export default function DepotOrderDetailPage() {
                 </a>
               </DropdownMenuItem>
             )}
+            <DropdownMenuItem onClick={() => setSendOpen(true)} data-testid="depot-send-order" className="gap-2">
+              <Send size={15} /> Envoyer à une boutique
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={removeOrder} data-testid="depot-delete-order" className="text-destructive gap-2">
               <Trash2 size={15} /> Supprimer la commande
             </DropdownMenuItem>
@@ -120,6 +143,17 @@ export default function DepotOrderDetailPage() {
           );
         })}
       </div>
+
+      <Dialog open={sendOpen} onOpenChange={setSendOpen}>
+        <DialogContent data-testid="depot-send-dialog">
+          <DialogHeader><DialogTitle>Envoyer le bon de livraison à une boutique</DialogTitle></DialogHeader>
+          <Select value={targetShop} onValueChange={setTargetShop}>
+            <SelectTrigger data-testid="depot-send-shop-select"><SelectValue placeholder="Choisir une boutique" /></SelectTrigger>
+            <SelectContent>{shops.map((s) => <SelectItem key={s.id} value={s.id}>{s.nom}</SelectItem>)}</SelectContent>
+          </Select>
+          <DialogFooter><Button data-testid="depot-send-confirm-button" onClick={sendToShop}>Envoyer</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

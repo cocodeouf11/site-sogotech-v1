@@ -187,6 +187,13 @@ export default function UsersPage() {
                   Autorisé
                 </label>
               </div>
+              <div>
+                <p className="text-sm font-semibold mb-1">Dépôt</p>
+                <label className="flex items-center gap-1.5 text-xs">
+                  <Checkbox data-testid="perm-depot" checked={!!permTarget.permissions.depot} onCheckedChange={() => setPermTarget((t) => ({ ...t, permissions: { ...t.permissions, depot: !t.permissions.depot } }))} />
+                  Accès à la fonction Dépôt (picking, étiquette, envoi des bons de commande)
+                </label>
+              </div>
             </div>
           )}
           <DialogFooter><Button data-testid="user-perms-save" onClick={savePerms}>Enregistrer</Button></DialogFooter>

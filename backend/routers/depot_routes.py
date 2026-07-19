@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from bson import ObjectId
 import fitz
 from database import db
-from auth_utils import get_current_user
+from auth_utils import get_current_user, has_permission, is_admin
 
 router = APIRouter(prefix="/api/depot", tags=["depot"])
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -90,8 +90,18 @@ def parse_delivery_lines(pdf_path: str) -> List[dict]:
     return lines_out
 
 
+def require_depot(user: dict):
+    if not has_permission(user, "depot", "access"):
+        raise HTTPException(status_code=403, detail="Permission Dépôt requise")
+
+
+class SendCommande(BaseModel):
+    shop_id: str
+
+
 @router.get("/orders")
 async def list_orders(q: Optional[str] = None, user: dict = Depends(get_current_user)):
+    require_depot(user)
     query = {}
     if q:
         query["numero"] = {"$regex": q, "$options": "i"}
@@ -101,6 +111,7 @@ async def list_orders(q: Optional[str] = None, user: dict = Depends(get_current_
 
 @router.get("/orders/{order_id}")
 async def get_order(order_id: str, user: dict = Depends(get_current_user)):
+    require_depot(user)
     order = await db.depot_orders.find_one({"_id": ObjectId(order_id)})
     if not order:
         raise HTTPException(status_code=404, detail="Introuvable")
@@ -109,6 +120,7 @@ async def get_order(order_id: str, user: dict = Depends(get_current_user)):
 
 @router.post("/orders")
 async def create_order(numero: Optional[str] = Form(None), delivery: UploadFile = File(...), label: Optional[UploadFile] = File(None), user: dict = Depends(get_current_user)):
+    require_depot(user)
     os.makedirs(os.path.join(UPLOAD_DIR, "depot"), exist_ok=True)
     delivery_filename = f"{uuid.uuid4()}.pdf"
     delivery_path = os.path.join(UPLOAD_DIR, "depot", delivery_filename)
@@ -143,6 +155,7 @@ async def create_order(numero: Optional[str] = Form(None), delivery: UploadFile 
 
 @router.post("/orders/{order_id}/lines")
 async def add_line(order_id: str, payload: LineCreate, user: dict = Depends(get_current_user)):
+    require_depot(user)
     line = {"id": str(uuid.uuid4()), "description": payload.description, "quantite_attendue": payload.quantite_attendue, "quantite_picked": 0}
     await db.depot_orders.update_one({"_id": ObjectId(order_id)}, {"$push": {"lines": line}})
     updated = await db.depot_orders.find_one({"_id": ObjectId(order_id)})
@@ -151,6 +164,7 @@ async def add_line(order_id: str, payload: LineCreate, user: dict = Depends(get_
 
 @router.post("/orders/{order_id}/lines/{line_id}/increment")
 async def increment_line(order_id: str, line_id: str, payload: LineUpdate, user: dict = Depends(get_current_user)):
+    require_depot(user)
     order = await db.depot_orders.find_one({"_id": ObjectId(order_id)})
     if not order:
         raise HTTPException(status_code=404, detail="Introuvable")
@@ -170,6 +184,7 @@ async def increment_line(order_id: str, line_id: str, payload: LineUpdate, user:
 
 @router.post("/orders/{order_id}/lines/{line_id}/tap")
 async def tap_line(order_id: str, line_id: str, user: dict = Depends(get_current_user)):
+    require_depot(user)
     order = await db.depot_orders.find_one({"_id": ObjectId(order_id)})
     if not order:
         raise HTTPException(status_code=404, detail="Introuvable")
@@ -189,5 +204,36 @@ async def tap_line(order_id: str, line_id: str, user: dict = Depends(get_current
 
 @router.delete("/orders/{order_id}")
 async def delete_order(order_id: str, user: dict = Depends(get_current_user)):
+    require_depot(user)
     await db.depot_orders.delete_one({"_id": ObjectId(order_id)})
     return {"success": True}
+
+
+@router.post("/orders/{order_id}/send")
+async def send_order(order_id: str, payload: SendCommande, user: dict = Depends(get_current_user)):
+    require_depot(user)
+    order = await db.depot_orders.find_one({"_id": ObjectId(order_id)})
+    if not order:
+        raise HTTPException(status_code=404, detail="Introuvable")
+    shop = await db.shops.find_one({"_id": ObjectId(payload.shop_id)})
+    if not shop:
+        raise HTTPException(status_code=404, detail="Boutique introuvable")
+    commande = {
+        "numero": order["numero"],
+        "depot_order_id": str(order["_id"]),
+        "shop_id": payload.shop_id,
+        "shop_nom": shop.get("nom"),
+        "lines": order.get("lines", []),
+        "delivery_pdf_url": order.get("delivery_pdf_url"),
+        "status": "envoyee",
+        "non_conforme_items": [],
+        "resolution_note": "",
+        "notification_message": "",
+        "sent_by": user["_id"],
+        "sent_by_nom": f"{user.get('prenom','')} {user.get('nom','')}",
+        "sent_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    result = await db.commandes.insert_one(commande)
+    created = await db.commandes.find_one({"_id": result.inserted_id})
+    return serialize(created)

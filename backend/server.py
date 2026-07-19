@@ -24,6 +24,7 @@ from routers import (
     reprise_routes,
     communication_routes,
     depot_routes,
+    commande_routes,
 )
 
 app = FastAPI()
@@ -46,6 +47,7 @@ app.include_router(devis_routes.router)
 app.include_router(reprise_routes.router)
 app.include_router(communication_routes.router)
 app.include_router(depot_routes.router)
+app.include_router(commande_routes.router)
 
 upload_dir = os.path.join(str(ROOT_DIR), os.environ.get("UPLOAD_DIR", "uploads"))
 os.makedirs(upload_dir, exist_ok=True)
@@ -113,6 +115,11 @@ async def seed_data():
     elif not verify_pin(admin_pin, admin.get("pin_hash", "")):
         await db.users.update_one({"_id": admin["_id"]}, {"$set": {"pin_hash": hash_pin(admin_pin)}})
         logger.info("Admin PIN updated to match ADMIN_PIN env var")
+
+    async for u in db.users.find({"permissions.depot": {"$exists": False}}):
+        grades = u.get("grades") or []
+        depot_allowed = any(GRADE_PERMISSION_TEMPLATES.get(g, {}).get("depot") for g in grades)
+        await db.users.update_one({"_id": u["_id"]}, {"$set": {"permissions.depot": depot_allowed}})
 
 
 @app.on_event("shutdown")
