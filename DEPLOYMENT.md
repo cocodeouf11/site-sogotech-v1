@@ -118,3 +118,13 @@ Ajouter HTTPS avec certbot (`sudo apt install certbot python3-certbot-nginx && s
 mongodump --db sogo_gestion --out /var/backups/sogo-gestion/$(date +%F)
 ```
 Planifier via cron quotidien.
+
+## 6. Réplication MariaDB (reporting / sauvegarde secondaire)
+
+Un outil complet de réplication MongoDB → MariaDB est fourni dans
+`/opt/sogo-gestion/migration_mariadb/` (schéma SQL + script de
+synchronisation testé). Il permet de consulter/exporter toutes les données
+de l'application via SQL classique, sans changer le fonctionnement de
+l'application (qui reste sur MongoDB). Voir
+`migration_mariadb/README.md` pour la procédure complète d'installation et
+d'automatisation (cron).

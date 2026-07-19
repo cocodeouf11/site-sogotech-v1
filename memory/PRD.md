@@ -80,6 +80,15 @@ Application web de gestion pour entreprise avec deux modules : **Boutique** et *
 - Migration automatique au démarrage : anciens articles sans `shop_id` rattachés à la boutique par défaut.
 - Tests : 55/55 backend (dont 21 nouveaux tests iteration 6), frontend validé à 100% après correction d'un bug de gating d'édition en mode "écriture" (canEdit ne tenait pas compte du mode de partage indépendamment des permissions propres du destinataire — corrigé et re-vérifié).
 
+## Itération 7 (19 juillet 2026) — Réplication MariaDB pour la production
+- Confirmation officielle (support Emergent) : l'environnement de développement Emergent ne supporte QUE MongoDB — MariaDB n'y est pas disponible, quelle que soit la configuration.
+- Décision utilisateur (option A) : l'application continue de fonctionner sur MongoDB (ici et en production sur Debian 12), mais un outil complet de **réplication MongoDB → MariaDB** est livré pour la sauvegarde/reporting/interopérabilité SQL, dans `/app/migration_mariadb/` :
+  - `schema.sql` : schéma relationnel complet (12 tables, une par collection), sous-documents variables en colonnes JSON.
+  - `migrate_mongo_to_mariadb.py` : script de synchronisation complète, idempotent (utilisable via cron).
+  - Testé de bout en bout dans cette session (MariaDB installé temporairement, schéma créé, migration réelle des 220+ articles, tickets, interventions, devis, reprises, commandes, etc. — toutes les tables synchronisées sans erreur).
+  - Sécurité : `pin_hash` n'est jamais répliqué vers MariaDB.
+  - `DEPLOYMENT.md` mis à jour (section 6) pour référencer cet outil.
+
 ## Backlog priorisé (P0/P1/P2)
 - **P0** : Aucun bloquant restant après correctifs.
 - **P1** :
