@@ -72,6 +72,14 @@ Application web de gestion pour entreprise avec deux modules : **Boutique** et *
 - Backend : 28/28 tests pytest (auth, permissions, CRUD tous modules, cloisonnement 403, PDF content-type, dépôt picking).
 - Frontend : parcours complet testés (login PIN, stock, caisse, intervention, devis, reprise avec signature/diagramme, admin, dépôt, thème). Bug corrigé : `batterie_pourcentage`/`offre_rachat` mal formatés en 422 lors de la création de reprise (RepriseFormPage.jsx) — corrigé et revérifié.
 
+## Itération 6 (19 juillet 2026) — Cloisonnement strict, multi-boutique, partage de documents
+- **Fix Dashboard** : crash corrigé pour les utilisateurs sans permission Dépôt (Promise.allSettled + appel `/depot/orders` conditionnel à `hasPerm(user,"depot")`).
+- **Cloisonnement strict** : Stock, Caisse (tickets/factures), Intervention, Devis, Reprise sont désormais filtrés côté backend par la boutique active de l'utilisateur (`effective_shop_id`) — un utilisateur normal ne voit plus AUCUNE donnée d'une autre boutique (suppression de l'ancien pattern "visible par tous avec cadenas"). Le `shop_id` envoyé par le frontend à la création est toujours ignoré/écrasé côté serveur par la boutique effective (sécurité).
+- **Permission "Inter boutique"** (nouvelle case dans Admin > Utilisateurs > Permissions) : Admin, "Gestionnaire toutes boutiques" ET tout utilisateur avec cette permission doivent choisir une boutique active via une fenêtre modale bloquante (`ShopSelectorModal`) après connexion si aucune n'est encore sélectionnée. Un sélecteur (`ShopSwitcher`) reste visible en permanence dans la barre du haut pour changer de boutique active à tout moment (rechargement complet des données après changement). Nouvel endpoint `PATCH /api/users/me/active-shop`.
+- **Permission "Partage de document"** (nouvelle case) : bouton "Partager" (icône Share2) sur Ticket/Facture, Devis, Reprise, Intervention → choix d'un utilisateur destinataire + mode "Lecture seule" ou "Lecture/écriture". Le document apparaît chez le destinataire avec un badge "Partagé par [Boutique] - [Nom]" ; modifiable uniquement si mode écriture (backend fait respecter ceci indépendamment des permissions propres du destinataire). Nouveaux endpoints `POST /api/{module}/{id}/share`. Logique centralisée dans `backend/sharing_utils.py` (DRY entre les 4 modules).
+- Migration automatique au démarrage : anciens articles sans `shop_id` rattachés à la boutique par défaut.
+- Tests : 55/55 backend (dont 21 nouveaux tests iteration 6), frontend validé à 100% après correction d'un bug de gating d'édition en mode "écriture" (canEdit ne tenait pas compte du mode de partage indépendamment des permissions propres du destinataire — corrigé et re-vérifié).
+
 ## Backlog priorisé (P0/P1/P2)
 - **P0** : Aucun bloquant restant après correctifs.
 - **P1** :
@@ -80,6 +88,7 @@ Application web de gestion pour entreprise avec deux modules : **Boutique** et *
   - Export PDF multi-pages avec pagination visuelle plus fine pour devis/factures longues.
   - Recherche/filtre sur les listes (interventions, devis, reprises, stock).
   - Historique/audit des modifications de permissions.
+  - Recadrage automatique avancé de l'étiquette Chronopost (actuellement outil HTML calibré manuellement).
 
 ## Prochaines actions suggérées
 - Migrer vers PostgreSQL/MariaDB si un hébergement strictement relationnel est requis en production (les routers sont isolés par module, migration ciblée possible).
