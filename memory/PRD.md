@@ -46,6 +46,13 @@ Application web de gestion pour entreprise avec deux modules : **Boutique** et *
 - Caisse : lignes d'historique réorganisées pour ne plus se chevaucher sur petit écran.
 - Tests : 100% (9/9) validés par l'agent de test sur mobile (390px), tablette (768px) et desktop (1920px), aucune régression détectée.
 
+## Itération 5 (19 juillet 2026) — Permission Dépôt + workflow Commande
+- Nouvelle permission booléenne "Dépôt" : masque le lien Dépôt et bloque les routes/API (403) si non attribuée. Migration automatique au démarrage pour les utilisateurs existants selon leur grade.
+- Nouvel onglet "Commande" (visible par tous) : le Dépôt envoie un bon de livraison à une boutique via ACTIONS > "Envoyer à une boutique" ; la boutique destinataire valide ("Tout est conforme" → ajout automatique au stock, articles existants incrémentés par nom, nouveaux créés avec code UGS ou auto-généré) ou signale une non-conformité (sélection des articles + description).
+- Cloisonnement : chaque boutique ne voit que ses propres commandes ; les utilisateurs avec permission Dépôt (ou admin) voient tout.
+- Notification automatique après résolution, visible uniquement par les détenteurs de la permission Dépôt (bannière en haut de l'onglet Commande, champ absent de l'API pour les autres).
+- Tests : 16/16 backend, scénario complet à 2 boutiques validé en UI (isolation confirmée), aucun bug trouvé.
+
 ## Ce qui est implémenté (17 juillet 2026)
 - Auth PIN + JWT cookie, seed admin (PIN 123456), seed boutique + dépôt par défaut.
 - Gestion utilisateurs : CRUD, grades multiples, permissions granulaires par module (reprise/devis/caisse/intervention/stock/communication), templates de permissions par grade avec surcharge admin.
